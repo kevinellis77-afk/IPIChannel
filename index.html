@@ -307,6 +307,9 @@
     <button id="saveBtn" type="button">Save</button>
     <button id="duplicateBtn" type="button">Duplicate</button>
     <button id="deleteBtn" type="button">Delete</button>
+    <button id="exportJsonBtn" type="button">Export JSON Backup</button>
+    <button id="importJsonBtn" type="button">Import JSON</button>
+    <input id="importJsonInput" type="file" accept="application/json,.json" hidden />
     <input id="searchInput" class="search-input" type="search" placeholder="Search MAPs" />
     <span id="cacheStatus" class="status saved">● Saved</span>
     <span id="unsavedIndicator" class="unsaved-pill" hidden>Unsaved changes</span>
@@ -430,6 +433,9 @@
         newBtn: document.getElementById('newBtn'),
         duplicateBtn: document.getElementById('duplicateBtn'),
         deleteBtn: document.getElementById('deleteBtn'),
+        exportJsonBtn: document.getElementById('exportJsonBtn'),
+        importJsonBtn: document.getElementById('importJsonBtn'),
+        importJsonInput: document.getElementById('importJsonInput'),
         unsavedIndicator: document.getElementById('unsavedIndicator'),
         cacheStatus: document.getElementById('cacheStatus'),
         sortSelect: document.getElementById('sortSelect'),
@@ -539,6 +545,27 @@
         });
       }
 
+      async function idbClear() {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.objectStore(STORE_NAME).clear();
+        });
+      }
+
+      async function idbBulkPut(mapList) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          const store = tx.objectStore(STORE_NAME);
+          mapList.forEach((mapObj) => store.put(mapObj));
+        });
+      }
+
       function validateRequired(mapObj, silent = false) {
         const required = ['opportunityName', 'accountName', 'salesOwner'];
         const missing = required.filter((key) => !String(mapObj[key] || '').trim());
@@ -558,6 +585,130 @@
         } else {
           el.cacheStatus.textContent = '● Saved';
           el.cacheStatus.className = 'status saved';
+        }
+      }
+
+      function showActionMessage(message, type = 'success', timeoutMs = 3200) {
+        const prefix = type === 'error' ? '● Error:' : '●';
+        el.cacheStatus.textContent = `${prefix} ${message}`;
+        el.cacheStatus.className = type === 'error' ? 'status unsaved' : 'status saved';
+        window.setTimeout(() => {
+          if (state.dirty) {
+            el.cacheStatus.textContent = '● Unsaved changes';
+            el.cacheStatus.className = 'status unsaved';
+          } else {
+            el.cacheStatus.textContent = '● Saved';
+            el.cacheStatus.className = 'status saved';
+          }
+        }, timeoutMs);
+      }
+
+      function dateStamp() {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}${mm}${dd}`;
+      }
+
+      function sanitizeImportedMap(rawMap) {
+        if (!rawMap || typeof rawMap !== 'object') return null;
+        const cleaned = { ...createEmptyMap(), ...rawMap };
+        cleaned.id = typeof rawMap.id === 'string' && rawMap.id.trim() ? rawMap.id : uid();
+        cleaned.createdAt = rawMap.createdAt || nowIso();
+        cleaned.updatedAt = rawMap.updatedAt || nowIso();
+        Object.keys(TABLE_SCHEMAS).forEach((key) => {
+          cleaned[key] = Array.isArray(rawMap[key]) ? rawMap[key] : [];
+        });
+        return cleaned;
+      }
+
+      async function exportJsonBackup() {
+        try {
+          const maps = await idbGetAll();
+          const payload = {
+            version: 1,
+            updatedAt: nowIso(),
+            maps
+          };
+          const jsonText = JSON.stringify(payload, null, 2);
+          const blob = new Blob([jsonText], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `meddpic-maps-backup-${dateStamp()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          showActionMessage(`Exported ${maps.length} MAP(s).`);
+        } catch (err) {
+          console.error(err);
+          showActionMessage('Export failed. Please try again.', 'error');
+        }
+      }
+
+      function chooseImportMode() {
+        if (!state.maps.length) return 'replace';
+        const choice = prompt(
+          'Import mode:\n- Type REPLACE to overwrite existing MAPs.\n- Type MERGE to merge by MAP id.\n- Type CANCEL to abort.'
+        );
+        if (!choice) return null;
+        const normalized = choice.trim().toLowerCase();
+        if (normalized === 'replace') {
+          const confirmed = confirm('This will overwrite all existing MAPs in local storage. Continue?');
+          return confirmed ? 'replace' : null;
+        }
+        if (normalized === 'merge') return 'merge';
+        return null;
+      }
+
+      async function importJsonBackup(file) {
+        if (!file) return;
+        try {
+          const text = await file.text();
+          let parsed;
+          try {
+            parsed = JSON.parse(text);
+          } catch (_parseError) {
+            showActionMessage('Invalid JSON file. Please select a valid backup.', 'error');
+            return;
+          }
+
+          if (!parsed || !Array.isArray(parsed.maps)) {
+            showActionMessage('Invalid backup format: missing maps array.', 'error');
+            return;
+          }
+
+          const sanitizedMaps = parsed.maps
+            .map((m) => sanitizeImportedMap(m))
+            .filter(Boolean);
+
+          const mode = chooseImportMode();
+          if (!mode) {
+            showActionMessage('Import cancelled.', 'error');
+            return;
+          }
+
+          if (mode === 'replace') {
+            await idbClear();
+            await idbBulkPut(sanitizedMaps);
+          } else {
+            await idbBulkPut(sanitizedMaps);
+          }
+
+          const maps = await idbGetAll();
+          state.maps = sortedMaps(maps);
+          state.currentMapId = state.maps[0]?.id || null;
+          state.currentMap = state.maps[0] ? JSON.parse(JSON.stringify(state.maps[0])) : null;
+          markDirty(false);
+          renderAll();
+          showActionMessage(`Imported ${sanitizedMaps.length} MAP(s) using ${mode.toUpperCase()} mode.`);
+        } catch (err) {
+          console.error(err);
+          showActionMessage('Import failed. Please try again.', 'error');
+        } finally {
+          el.importJsonInput.value = '';
         }
       }
 
@@ -1044,6 +1195,9 @@
       el.newBtn.addEventListener('click', createNewMap);
       el.duplicateBtn.addEventListener('click', duplicateCurrent);
       el.deleteBtn.addEventListener('click', deleteCurrent);
+      el.exportJsonBtn.addEventListener('click', exportJsonBackup);
+      el.importJsonBtn.addEventListener('click', () => el.importJsonInput.click());
+      el.importJsonInput.addEventListener('change', (e) => importJsonBackup(e.target.files && e.target.files[0]));
 
       init();
     })();
