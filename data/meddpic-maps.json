@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-10T11:01:36.103Z",
+  "updatedAt": "2026-04-10T11:20:33.920Z",
   "maps": [
     {
       "id": "5077625b-7c6a-4888-9cc9-10146d7456d6",
       "createdAt": "2026-04-10T09:31:16.754Z",
-      "updatedAt": "2026-04-10T09:54:29.003Z",
+      "updatedAt": "2026-04-10T11:20:28.971Z",
       "opportunityName": "Acme PCI Opportunity",
       "accountName": "Acme Financial",
       "dealValue": "250000",
@@ -13,8 +13,8 @@
       "closeDate": "2026-07-30",
       "salesOwner": "Kevin Ellis",
       "economicBuyer": "Rita Shah",
-      "champion": "Darren Wong",
-      "overallHealth": "Green",
+      "champion": "sdfsdfds",
+      "overallHealth": "Red",
       "notes": "Pilot finished. Procurement review starts next week.",
       "meddpicScorecard": [
         [
