@@ -94,6 +94,10 @@
       color: var(--warning);
     }
 
+    .status.sync {
+      color: #1d4ed8;
+    }
+
     .shell {
       display: grid;
       grid-template-columns: 320px 1fr;
@@ -299,6 +303,81 @@
       font-weight: 600;
     }
 
+    .sync-pill {
+      color: #1d4ed8;
+      font-size: 12px;
+      margin-left: 4px;
+      font-weight: 700;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(760px, 100%);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(2, 8, 23, 0.2);
+      overflow: hidden;
+    }
+
+    .modal-header,
+    .modal-footer {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .modal-footer {
+      border-top: 1px solid var(--border);
+      border-bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .modal-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      background: #fff;
+    }
+
+    .warn-text {
+      font-size: 12px;
+      color: #7c2d12;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 0;
+    }
+
+    .sync-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+    }
+
+    .sync-grid button {
+      width: 100%;
+    }
+
     .print-report {
       display: none;
       padding: 24px;
@@ -447,7 +526,10 @@
     <input id="importJsonInput" type="file" accept="application/json,.json" hidden />
     <input id="searchInput" class="search-input" type="search" placeholder="Search MAPs" />
     <span id="cacheStatus" class="status saved">● Saved</span>
+    <span id="syncStatus" class="status sync">GitHub: Not connected</span>
+    <span id="syncUnsavedBadge" class="sync-pill" hidden>Unsynced changes</span>
     <span id="unsavedIndicator" class="unsaved-pill" hidden>Unsaved changes</span>
+    <button id="syncSettingsBtn" type="button">Sync / Storage</button>
   </header>
 
   <div class="shell">
@@ -491,6 +573,34 @@
   </div>
 
   <section id="printReport" class="print-report" aria-hidden="true"></section>
+
+  <div id="syncModal" class="modal-backdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="syncModalTitle">
+      <div class="modal-header">
+        <strong id="syncModalTitle">Sync / Storage Settings</strong>
+      </div>
+      <div class="modal-body">
+        <p class="warn-text">
+          Security note: Personal access tokens in static browser apps are high risk. Use a narrowly scoped token,
+          avoid reusing personal admin tokens, and prefer a private repository for MAP data.
+        </p>
+        <div id="syncConnectionInfo" class="status sync">GitHub: Not connected</div>
+        <div id="syncLastSyncInfo" class="status">Last sync: Never</div>
+        <div class="sync-grid">
+          <button id="connectGithubBtn" type="button">Connect GitHub</button>
+          <button id="disconnectGithubBtn" type="button">Disconnect GitHub</button>
+          <button id="loadGithubBtn" type="button">Load from GitHub</button>
+          <button id="saveGithubBtn" type="button">Save to GitHub</button>
+          <button id="createGithubFileBtn" type="button">Create GitHub data file</button>
+        </div>
+        <div id="syncErrorBox" class="warn-text" hidden></div>
+      </div>
+      <div class="modal-footer">
+        <small>IndexedDB remains the primary working store.</small>
+        <button id="closeSyncModalBtn" type="button">Close</button>
+      </div>
+    </section>
+  </div>
 
   <script>
     (() => {
@@ -556,8 +666,18 @@
           overallHealth: '',
           salesOwner: '',
           forecastCategory: ''
+        },
+        sync: {
+          connected: false,
+          config: null,
+          lastSyncAt: null,
+          unsynced: false,
+          lastError: ''
         }
       };
+
+      const LOCAL_DATA_UPDATED_AT_KEY = 'meddpic_local_data_updated_at_v1';
+      const LAST_SYNC_AT_KEY = 'meddpic_github_last_sync_at_v1';
 
       let autosaveTimer = null;
 
@@ -578,10 +698,23 @@
         printReport: document.getElementById('printReport'),
         unsavedIndicator: document.getElementById('unsavedIndicator'),
         cacheStatus: document.getElementById('cacheStatus'),
+        syncStatus: document.getElementById('syncStatus'),
+        syncUnsavedBadge: document.getElementById('syncUnsavedBadge'),
         sortSelect: document.getElementById('sortSelect'),
         filterHealth: document.getElementById('filterHealth'),
         filterOwner: document.getElementById('filterOwner'),
-        filterForecast: document.getElementById('filterForecast')
+        filterForecast: document.getElementById('filterForecast'),
+        syncSettingsBtn: document.getElementById('syncSettingsBtn'),
+        syncModal: document.getElementById('syncModal'),
+        closeSyncModalBtn: document.getElementById('closeSyncModalBtn'),
+        connectGithubBtn: document.getElementById('connectGithubBtn'),
+        disconnectGithubBtn: document.getElementById('disconnectGithubBtn'),
+        loadGithubBtn: document.getElementById('loadGithubBtn'),
+        saveGithubBtn: document.getElementById('saveGithubBtn'),
+        createGithubFileBtn: document.getElementById('createGithubFileBtn'),
+        syncConnectionInfo: document.getElementById('syncConnectionInfo'),
+        syncLastSyncInfo: document.getElementById('syncLastSyncInfo'),
+        syncErrorBox: document.getElementById('syncErrorBox')
       };
 
       function uid() {
@@ -590,6 +723,28 @@
 
       function nowIso() {
         return new Date().toISOString();
+      }
+
+      function getLocalDataUpdatedAt() {
+        return localStorage.getItem(LOCAL_DATA_UPDATED_AT_KEY) || null;
+      }
+
+      function setLocalDataUpdatedAt(value = nowIso()) {
+        localStorage.setItem(LOCAL_DATA_UPDATED_AT_KEY, value);
+      }
+
+      function getBase64FromUtf8(str) {
+        const bytes = new TextEncoder().encode(str);
+        let binary = '';
+        bytes.forEach((b) => { binary += String.fromCharCode(b); });
+        return btoa(binary);
+      }
+
+      function getUtf8FromBase64(base64) {
+        const normalized = String(base64 || '').replace(/\n/g, '');
+        const binary = atob(normalized);
+        const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
       }
 
       function createEmptyMap() {
@@ -741,6 +896,269 @@
             el.cacheStatus.className = 'status saved';
           }
         }, timeoutMs);
+      }
+
+      function setSyncError(message = '') {
+        state.sync.lastError = message;
+        if (!message) {
+          el.syncErrorBox.hidden = true;
+          el.syncErrorBox.textContent = '';
+          return;
+        }
+        el.syncErrorBox.hidden = false;
+        el.syncErrorBox.textContent = `Sync error: ${message}`;
+      }
+
+      function markUnsynced(value = true) {
+        state.sync.unsynced = value;
+        el.syncUnsavedBadge.hidden = !value;
+        refreshSyncStatus();
+      }
+
+      function refreshSyncStatus() {
+        const cfg = state.sync.config;
+        const connectedText = state.sync.connected && cfg
+          ? `GitHub: Connected (${cfg.owner}/${cfg.repo}@${cfg.branch})`
+          : 'GitHub: Not connected';
+        el.syncStatus.textContent = connectedText;
+        el.syncConnectionInfo.textContent = connectedText;
+        const lastSyncLabel = state.sync.lastSyncAt ? formatDateTime(state.sync.lastSyncAt) : 'Never';
+        el.syncLastSyncInfo.textContent = `Last sync: ${lastSyncLabel}`;
+      }
+
+      function openSyncModal() {
+        refreshSyncStatus();
+        el.syncModal.classList.add('open');
+        el.syncModal.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeSyncModal() {
+        el.syncModal.classList.remove('open');
+        el.syncModal.setAttribute('aria-hidden', 'true');
+      }
+
+      function promptForGithubConfig(existing = null) {
+        // Security note: this token is only captured at runtime and is never hardcoded in source.
+        const token = prompt('GitHub token (runtime only):', existing?.token || '');
+        if (!token) return null;
+        const owner = prompt('GitHub repo owner:', existing?.owner || '');
+        if (!owner) return null;
+        const repo = prompt('GitHub repo name:', existing?.repo || '');
+        if (!repo) return null;
+        const branch = prompt('GitHub branch:', existing?.branch || 'main');
+        if (!branch) return null;
+        const path = prompt('JSON file path in repo:', existing?.path || 'data/meddpic-maps.json');
+        if (!path) return null;
+        return { token: token.trim(), owner: owner.trim(), repo: repo.trim(), branch: branch.trim(), path: path.trim() };
+      }
+
+      function connectGithub() {
+        const config = promptForGithubConfig(state.sync.config);
+        if (!config) {
+          showActionMessage('GitHub connection cancelled.', 'error');
+          return;
+        }
+        state.sync.connected = true;
+        state.sync.config = config;
+        setSyncError('');
+        refreshSyncStatus();
+        showActionMessage('GitHub connected for sync operations.');
+      }
+
+      function disconnectGithub() {
+        state.sync.connected = false;
+        state.sync.config = null;
+        setSyncError('');
+        refreshSyncStatus();
+        showActionMessage('GitHub disconnected.');
+      }
+
+      function ensureGithubConnected() {
+        if (state.sync.connected && state.sync.config) return true;
+        showActionMessage('Connect GitHub first from Sync / Storage settings.', 'error');
+        return false;
+      }
+
+      async function githubRequest(method, endpoint, body = null) {
+        const cfg = state.sync.config;
+        const url = `https://api.github.com${endpoint}`;
+        const headers = {
+          'Accept': 'application/vnd.github+json',
+          'Authorization': `Bearer ${cfg.token}`,
+          'X-GitHub-Api-Version': '2022-11-28'
+        };
+        if (body) headers['Content-Type'] = 'application/json';
+        const response = await fetch(url, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined
+        });
+        const text = await response.text();
+        let payload = null;
+        try { payload = text ? JSON.parse(text) : null; } catch (_err) { payload = { message: text }; }
+        if (!response.ok) {
+          const err = new Error(payload?.message || `${method} ${endpoint} failed`);
+          err.status = response.status;
+          err.payload = payload;
+          throw err;
+        }
+        return payload;
+      }
+
+      function getGithubContentsEndpoint(cfg) {
+        const encodedPath = cfg.path.split('/').map(encodeURIComponent).join('/');
+        return `/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encodedPath}`;
+      }
+
+      async function fetchGithubDataFile() {
+        const cfg = state.sync.config;
+        const endpoint = `${getGithubContentsEndpoint(cfg)}?ref=${encodeURIComponent(cfg.branch)}`;
+        try {
+          const file = await githubRequest('GET', endpoint);
+          const text = getUtf8FromBase64(file.content || '');
+          const parsed = JSON.parse(text);
+          if (!parsed || !Array.isArray(parsed.maps)) {
+            throw new Error('GitHub JSON is invalid. Expected { version, updatedAt, maps }.');
+          }
+          return { exists: true, sha: file.sha, data: parsed };
+        } catch (err) {
+          if (err.status === 404) return { exists: false, sha: null, data: null };
+          throw err;
+        }
+      }
+
+      function askConflictAction(localUpdatedAt, remoteUpdatedAt) {
+        const choice = prompt(
+          `Conflict detected.
+Local updatedAt: ${localUpdatedAt || 'n/a'}
+GitHub updatedAt: ${remoteUpdatedAt || 'n/a'}
+Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CANCEL.`
+        );
+        if (!choice) return 'cancel';
+        const normalized = choice.trim().toLowerCase();
+        if (normalized === 'push') return 'push';
+        if (normalized === 'replace') return 'replace';
+        return 'cancel';
+      }
+
+      async function applyGithubMapsToLocal(githubPayload) {
+        const sanitizedMaps = githubPayload.maps.map((m) => sanitizeImportedMap(m)).filter(Boolean);
+        await idbClear();
+        await idbBulkPut(sanitizedMaps);
+        const maps = await idbGetAll();
+        state.maps = sortedMaps(maps);
+        state.currentMapId = state.maps[0]?.id || null;
+        state.currentMap = state.maps[0] ? JSON.parse(JSON.stringify(state.maps[0])) : null;
+        markDirty(false);
+        markUnsynced(false);
+        const updatedAt = githubPayload.updatedAt || nowIso();
+        setLocalDataUpdatedAt(updatedAt);
+        state.sync.lastSyncAt = nowIso();
+        localStorage.setItem(LAST_SYNC_AT_KEY, state.sync.lastSyncAt);
+        renderAll();
+        refreshSyncStatus();
+      }
+
+      async function loadFromGithub() {
+        if (!ensureGithubConnected()) return;
+        try {
+          setSyncError('');
+          const remote = await fetchGithubDataFile();
+          if (!remote.exists) {
+            throw new Error('GitHub file not found. Use "Create GitHub data file" first.');
+          }
+          const localUpdatedAt = getLocalDataUpdatedAt();
+          const remoteUpdatedAt = remote.data.updatedAt || null;
+          if (localUpdatedAt && remoteUpdatedAt && new Date(localUpdatedAt) > new Date(remoteUpdatedAt)) {
+            const action = askConflictAction(localUpdatedAt, remoteUpdatedAt);
+            if (action === 'cancel') return;
+            if (action === 'push') {
+              await saveToGithub();
+              return;
+            }
+          }
+          await applyGithubMapsToLocal(remote.data);
+          showActionMessage(`Loaded ${remote.data.maps.length} MAP(s) from GitHub.`);
+        } catch (err) {
+          console.error(err);
+          setSyncError(err.message || 'Failed to load from GitHub.');
+          showActionMessage(err.message || 'Load from GitHub failed.', 'error');
+        }
+      }
+
+      async function saveToGithub() {
+        if (!ensureGithubConnected()) return;
+        try {
+          setSyncError('');
+          const remote = await fetchGithubDataFile();
+          const localMaps = await idbGetAll();
+          const localUpdatedAt = getLocalDataUpdatedAt() || nowIso();
+          const remoteUpdatedAt = remote.data?.updatedAt || null;
+
+          if (remote.exists && remoteUpdatedAt && localUpdatedAt && new Date(remoteUpdatedAt) > new Date(localUpdatedAt)) {
+            const action = askConflictAction(localUpdatedAt, remoteUpdatedAt);
+            if (action === 'cancel') return;
+            if (action === 'replace') {
+              await applyGithubMapsToLocal(remote.data);
+              showActionMessage('Local data replaced from newer GitHub data.');
+              return;
+            }
+          }
+
+          const payload = {
+            version: 1,
+            updatedAt: nowIso(),
+            maps: localMaps
+          };
+          const cfg = state.sync.config;
+          await githubRequest('PUT', getGithubContentsEndpoint(cfg), {
+            message: `Update MEDDPIC MAP data ${new Date().toISOString()}`,
+            content: getBase64FromUtf8(JSON.stringify(payload, null, 2)),
+            branch: cfg.branch,
+            sha: remote.sha || undefined
+          });
+          setLocalDataUpdatedAt(payload.updatedAt);
+          state.sync.lastSyncAt = nowIso();
+          localStorage.setItem(LAST_SYNC_AT_KEY, state.sync.lastSyncAt);
+          markUnsynced(false);
+          refreshSyncStatus();
+          showActionMessage(`Saved ${localMaps.length} MAP(s) to GitHub.`);
+        } catch (err) {
+          console.error(err);
+          setSyncError(err.message || 'Failed to save to GitHub.');
+          showActionMessage(err.message || 'Save to GitHub failed.', 'error');
+        }
+      }
+
+      async function createGithubDataFile() {
+        if (!ensureGithubConnected()) return;
+        try {
+          setSyncError('');
+          const remote = await fetchGithubDataFile();
+          if (remote.exists) {
+            const proceed = confirm('GitHub data file already exists. Overwrite it?');
+            if (!proceed) return;
+          }
+          const localMaps = await idbGetAll();
+          const payload = { version: 1, updatedAt: nowIso(), maps: localMaps };
+          const cfg = state.sync.config;
+          await githubRequest('PUT', getGithubContentsEndpoint(cfg), {
+            message: `Create MEDDPIC MAP data file ${new Date().toISOString()}`,
+            content: getBase64FromUtf8(JSON.stringify(payload, null, 2)),
+            branch: cfg.branch,
+            sha: remote.sha || undefined
+          });
+          setLocalDataUpdatedAt(payload.updatedAt);
+          state.sync.lastSyncAt = nowIso();
+          localStorage.setItem(LAST_SYNC_AT_KEY, state.sync.lastSyncAt);
+          markUnsynced(false);
+          refreshSyncStatus();
+          showActionMessage('GitHub data file created.');
+        } catch (err) {
+          console.error(err);
+          setSyncError(err.message || 'Failed to create GitHub file.');
+          showActionMessage(err.message || 'Create GitHub file failed.', 'error');
+        }
       }
 
       function dateStamp() {
@@ -917,6 +1335,8 @@
           } else {
             await idbBulkPut(sanitizedMaps);
           }
+          setLocalDataUpdatedAt(nowIso());
+          markUnsynced(true);
 
           const maps = await idbGetAll();
           state.maps = sortedMaps(maps);
@@ -1305,6 +1725,8 @@
         toSave.updatedAt = nowIso();
 
         await idbPut(toSave);
+        setLocalDataUpdatedAt(toSave.updatedAt);
+        markUnsynced(true);
 
         const idx = state.maps.findIndex((m) => m.id === toSave.id);
         if (idx >= 0) {
@@ -1342,6 +1764,8 @@
         cloned.updatedAt = timestamp;
         cloned.opportunityName = (cloned.opportunityName || 'Untitled') + ' Copy';
         await idbPut(cloned);
+        setLocalDataUpdatedAt(cloned.updatedAt);
+        markUnsynced(true);
         state.maps = sortedMaps([...state.maps, cloned]);
         setCurrentMap(cloned.id);
       }
@@ -1351,6 +1775,8 @@
         if (!confirm('Delete this MAP? This cannot be undone.')) return;
 
         await idbDelete(state.currentMapId);
+        setLocalDataUpdatedAt(nowIso());
+        markUnsynced(true);
         state.maps = state.maps.filter((m) => m.id !== state.currentMapId);
         const next = state.maps[0] || null;
         state.currentMapId = next ? next.id : null;
@@ -1464,12 +1890,17 @@
           if (!maps.length) {
             const sample = createSampleMap();
             await idbPut(sample);
+            setLocalDataUpdatedAt(sample.updatedAt);
             maps = [sample];
           }
 
           state.maps = sortedMaps(maps);
           state.currentMapId = state.maps[0]?.id || null;
           state.currentMap = state.maps[0] ? JSON.parse(JSON.stringify(state.maps[0])) : null;
+          state.sync.lastSyncAt = localStorage.getItem(LAST_SYNC_AT_KEY);
+          const localUpdated = getLocalDataUpdatedAt();
+          markUnsynced(Boolean(localUpdated && (!state.sync.lastSyncAt || new Date(localUpdated) > new Date(state.sync.lastSyncAt))));
+          refreshSyncStatus();
           renderAll();
         } catch (err) {
           console.error(err);
@@ -1511,6 +1942,16 @@
       el.importJsonBtn.addEventListener('click', () => el.importJsonInput.click());
       el.importJsonInput.addEventListener('change', (e) => importJsonBackup(e.target.files && e.target.files[0]));
       el.exportPdfBtn.addEventListener('click', exportCurrentMapPdf);
+      el.syncSettingsBtn.addEventListener('click', openSyncModal);
+      el.closeSyncModalBtn.addEventListener('click', closeSyncModal);
+      el.syncModal.addEventListener('click', (e) => {
+        if (e.target === el.syncModal) closeSyncModal();
+      });
+      el.connectGithubBtn.addEventListener('click', connectGithub);
+      el.disconnectGithubBtn.addEventListener('click', disconnectGithub);
+      el.loadGithubBtn.addEventListener('click', loadFromGithub);
+      el.saveGithubBtn.addEventListener('click', saveToGithub);
+      el.createGithubFileBtn.addEventListener('click', createGithubDataFile);
 
       init();
     })();
