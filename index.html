@@ -140,6 +140,11 @@
       position: relative;
     }
 
+    .menu-btn.sync-warning {
+      border-color: #fca5a5;
+      background: #fff1f2;
+    }
+
     .sync-dot {
       width: 8px;
       height: 8px;
@@ -148,6 +153,10 @@
       position: absolute;
       top: 7px;
       right: 8px;
+    }
+
+    .sync-dot.warning {
+      background: var(--danger);
     }
 
     .actions-menu {
@@ -748,20 +757,6 @@
       color: #991b1b;
     }
 
-    .unsaved-pill {
-      color: var(--warning);
-      font-size: 12px;
-      margin-left: 4px;
-      font-weight: 600;
-    }
-
-    .saved-pill {
-      color: var(--ok);
-      font-size: 12px;
-      margin-left: 4px;
-      font-weight: 600;
-    }
-
     .sync-pill {
       color: #1d4ed8;
       font-size: 12px;
@@ -769,52 +764,10 @@
       font-weight: 700;
     }
 
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.45);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      padding: 16px;
-    }
-
-    .modal-backdrop.open {
-      display: flex;
-    }
-
-    .modal {
-      width: min(760px, 100%);
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      box-shadow: 0 10px 24px rgba(2, 8, 23, 0.2);
-      overflow: hidden;
-    }
-
-    .modal-header,
-    .modal-footer {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--panel);
-    }
-
-    .modal-footer {
-      border-top: 1px solid var(--border);
-      border-bottom: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .modal-body {
-      padding: 14px;
-      display: grid;
-      gap: 12px;
-      background: #fff;
+    .actions-menu .warn-text {
+      margin: 4px 6px;
+      font-size: 11px;
+      padding: 8px;
     }
 
     .warn-text {
@@ -825,16 +778,6 @@
       border-radius: 8px;
       padding: 10px;
       margin: 0;
-    }
-
-    .sync-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 8px;
-    }
-
-    .sync-grid button {
-      width: 100%;
     }
 
     .print-report {
@@ -1001,11 +944,9 @@
       </svg>
     </div>
     <button id="newBtn" type="button">New MAP</button>
-    <button id="saveBtn" type="button">Save</button>
-    <input id="importJsonInput" type="file" accept="application/json,.json" hidden />
+        <input id="importJsonInput" type="file" accept="application/json,.json" hidden />
     <input id="searchInput" class="search-input" type="search" placeholder="Search MAPs" />
-    <span id="cacheStatus" class="status saved">● Saved</span>
-    <span id="unsavedIndicator" class="unsaved-pill" hidden>Unsaved changes</span>
+    <span id="cacheStatus" class="status saved">Saved locally</span>
     <div class="topbar-actions">
       <div class="menu-wrap">
         <button id="menuBtn" class="menu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="actionsMenu">
@@ -1023,11 +964,16 @@
           <button id="importJsonBtn" type="button" role="menuitem">Import JSON</button>
           <button id="exportPdfBtn" type="button" role="menuitem">Export PDF</button>
           <hr class="menu-divider" />
-          <div class="menu-group-label">Storage / Sync</div>
-          <div id="syncStatus" class="status sync">GitHub: Not connected</div>
-          <div id="syncLastSyncInfoMenu" class="status">Last sync: Never</div>
+          <div class="menu-group-label">Storage & Sync</div>
+          <div id="syncStatus" class="status sync">GitHub not connected</div>
+          <div id="syncLastSyncInfoMenu" class="status">Last synced to GitHub: Never</div>
           <span id="syncUnsavedBadge" class="sync-pill" hidden>Unsynced changes</span>
-          <button id="syncSettingsBtn" type="button" role="menuitem">Sync / Storage Settings</button>
+          <div id="syncErrorBox" class="warn-text" hidden></div>
+          <button id="connectGithubBtn" type="button" role="menuitem">Connect GitHub</button>
+          <button id="disconnectGithubBtn" type="button" role="menuitem">Disconnect GitHub</button>
+          <button id="loadGithubBtn" type="button" role="menuitem">Load from GitHub</button>
+          <button id="saveGithubBtn" type="button" role="menuitem">Save to GitHub</button>
+          <button id="createGithubFileBtn" type="button" role="menuitem">Create GitHub data file</button>
         </div>
       </div>
     </div>
@@ -1081,34 +1027,6 @@
   </div>
 
   <section id="printReport" class="print-report" aria-hidden="true"></section>
-
-  <div id="syncModal" class="modal-backdrop" aria-hidden="true">
-    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="syncModalTitle">
-      <div class="modal-header">
-        <strong id="syncModalTitle">Sync / Storage Settings</strong>
-      </div>
-      <div class="modal-body">
-        <p class="warn-text">
-          Security note: Personal access tokens in static browser apps are high risk. Use a narrowly scoped token,
-          avoid reusing personal admin tokens, and prefer a private repository for MAP data.
-        </p>
-        <div id="syncConnectionInfo" class="status sync">GitHub: Not connected</div>
-        <div id="syncLastSyncInfo" class="status">Last sync: Never</div>
-        <div class="sync-grid">
-          <button id="connectGithubBtn" type="button">Connect GitHub</button>
-          <button id="disconnectGithubBtn" type="button">Disconnect GitHub</button>
-          <button id="loadGithubBtn" type="button">Load from GitHub</button>
-          <button id="saveGithubBtn" type="button">Save to GitHub</button>
-          <button id="createGithubFileBtn" type="button">Create GitHub data file</button>
-        </div>
-        <div id="syncErrorBox" class="warn-text" hidden></div>
-      </div>
-      <div class="modal-footer">
-        <small>IndexedDB remains the primary working store.</small>
-        <button id="closeSyncModalBtn" type="button">Close</button>
-      </div>
-    </section>
-  </div>
 
   <script>
     (() => {
@@ -1197,13 +1115,13 @@
       const GITHUB_CONFIG_KEY = 'meddpic_github_config_v1';
 
       let autosaveTimer = null;
+      let statusMessageTimer = null;
 
       const el = {
         mapList: document.getElementById('mapList'),
         tabs: document.getElementById('tabs'),
         panels: document.getElementById('panels'),
         searchInput: document.getElementById('searchInput'),
-        saveBtn: document.getElementById('saveBtn'),
         newBtn: document.getElementById('newBtn'),
         duplicateBtn: document.getElementById('duplicateBtn'),
         deleteBtn: document.getElementById('deleteBtn'),
@@ -1216,7 +1134,6 @@
         actionsMenu: document.getElementById('actionsMenu'),
         menuSyncDot: document.getElementById('menuSyncDot'),
         printReport: document.getElementById('printReport'),
-        unsavedIndicator: document.getElementById('unsavedIndicator'),
         cacheStatus: document.getElementById('cacheStatus'),
         syncStatus: document.getElementById('syncStatus'),
         syncUnsavedBadge: document.getElementById('syncUnsavedBadge'),
@@ -1229,16 +1146,11 @@
         filterHealth: document.getElementById('filterHealth'),
         filterOwner: document.getElementById('filterOwner'),
         filterForecast: document.getElementById('filterForecast'),
-        syncSettingsBtn: document.getElementById('syncSettingsBtn'),
-        syncModal: document.getElementById('syncModal'),
-        closeSyncModalBtn: document.getElementById('closeSyncModalBtn'),
         connectGithubBtn: document.getElementById('connectGithubBtn'),
         disconnectGithubBtn: document.getElementById('disconnectGithubBtn'),
         loadGithubBtn: document.getElementById('loadGithubBtn'),
         saveGithubBtn: document.getElementById('saveGithubBtn'),
         createGithubFileBtn: document.getElementById('createGithubFileBtn'),
-        syncConnectionInfo: document.getElementById('syncConnectionInfo'),
-        syncLastSyncInfo: document.getElementById('syncLastSyncInfo'),
         syncErrorBox: document.getElementById('syncErrorBox')
       };
 
@@ -1676,30 +1588,44 @@
         return { valid: issues.length === 0, issues, completeness };
       }
 
+      function setLocalStatus(type, customMessage = '') {
+        if (statusMessageTimer) {
+          clearTimeout(statusMessageTimer);
+          statusMessageTimer = null;
+        }
+        if (type === 'saving') {
+          el.cacheStatus.textContent = 'Saving locally…';
+          el.cacheStatus.className = 'status';
+          return;
+        }
+        if (type === 'unsaved') {
+          el.cacheStatus.textContent = 'Unsaved changes';
+          el.cacheStatus.className = 'status unsaved';
+          return;
+        }
+        if (type === 'error') {
+          el.cacheStatus.textContent = customMessage || 'Local autosave failed';
+          el.cacheStatus.className = 'status unsaved';
+          return;
+        }
+        el.cacheStatus.textContent = 'Saved locally';
+        el.cacheStatus.className = 'status saved';
+      }
+
       function markDirty(dirty = true) {
         state.dirty = dirty;
-        el.unsavedIndicator.hidden = !dirty;
         if (dirty) {
-          el.cacheStatus.textContent = '● Unsaved changes';
-          el.cacheStatus.className = 'status unsaved';
+          setLocalStatus('unsaved');
         } else {
-          el.cacheStatus.textContent = '● Saved';
-          el.cacheStatus.className = 'status saved';
+          setLocalStatus('saved');
         }
       }
 
       function showActionMessage(message, type = 'success', timeoutMs = 3200) {
-        const prefix = type === 'error' ? '● Error:' : '●';
-        el.cacheStatus.textContent = `${prefix} ${message}`;
+        el.cacheStatus.textContent = message;
         el.cacheStatus.className = type === 'error' ? 'status unsaved' : 'status saved';
-        window.setTimeout(() => {
-          if (state.dirty) {
-            el.cacheStatus.textContent = '● Unsaved changes';
-            el.cacheStatus.className = 'status unsaved';
-          } else {
-            el.cacheStatus.textContent = '● Saved';
-            el.cacheStatus.className = 'status saved';
-          }
+        statusMessageTimer = window.setTimeout(() => {
+          setLocalStatus(state.dirty ? 'unsaved' : 'saved');
         }, timeoutMs);
       }
 
@@ -1708,10 +1634,16 @@
         if (!message) {
           el.syncErrorBox.hidden = true;
           el.syncErrorBox.textContent = '';
+          el.menuBtn.classList.remove('sync-warning');
+          el.menuSyncDot.classList.remove('warning');
+          el.menuSyncDot.hidden = !state.sync.unsynced;
           return;
         }
         el.syncErrorBox.hidden = false;
-        el.syncErrorBox.textContent = `Sync error: ${message}`;
+        el.syncErrorBox.textContent = `GitHub sync failed: ${message}`;
+        el.menuBtn.classList.add('sync-warning');
+        el.menuSyncDot.classList.add('warning');
+        el.menuSyncDot.hidden = false;
       }
 
       function maskToken(token = '') {
@@ -1789,7 +1721,7 @@
       function markUnsynced(value = true) {
         state.sync.unsynced = value;
         el.syncUnsavedBadge.hidden = !value;
-        el.menuSyncDot.hidden = !value;
+        el.menuSyncDot.hidden = !value && !state.sync.lastError;
         refreshSyncStatus();
       }
 
@@ -1829,28 +1761,15 @@
         state.sync.connected = isGitHubConnectedConfig(persistedConfig);
         const cfg = state.sync.config;
         const connectedText = state.sync.connected && cfg
-          ? `GitHub: Connected (${cfg.owner}/${cfg.repo}@${cfg.branch})`
-          : 'GitHub: Not connected';
+          ? `GitHub connected (${cfg.owner}/${cfg.repo}@${cfg.branch})`
+          : 'GitHub not connected';
         el.syncStatus.textContent = connectedText;
-        el.syncConnectionInfo.textContent = connectedText;
         const lastSyncLabel = state.sync.lastSyncAt ? formatDateTime(state.sync.lastSyncAt) : 'Never';
-        el.syncLastSyncInfo.textContent = `Last sync: ${lastSyncLabel}`;
-        el.syncLastSyncInfoMenu.textContent = `Last sync: ${lastSyncLabel}`;
+        el.syncLastSyncInfoMenu.textContent = `Last synced to GitHub: ${lastSyncLabel}`;
       }
 
       function refreshSyncStatus() {
         refreshGitHubConnectionUI();
-      }
-
-      function openSyncModal() {
-        refreshSyncStatus();
-        el.syncModal.classList.add('open');
-        el.syncModal.setAttribute('aria-hidden', 'false');
-      }
-
-      function closeSyncModal() {
-        el.syncModal.classList.remove('open');
-        el.syncModal.setAttribute('aria-hidden', 'true');
       }
 
       function promptForGithubConfig(existing = null) {
@@ -1934,7 +1853,6 @@
           refreshGitHubConnectionUI();
           console.log('[GitHub] UI state refreshed');
           showActionMessage(infoMessage);
-          closeSyncModal();
         } catch (err) {
           console.error('[GitHub] connectGitHub failed with error', err);
           setSyncError(err.message || 'Failed to connect GitHub.');
@@ -1955,7 +1873,7 @@
       function ensureGithubConnected() {
         refreshGitHubConnectionUI();
         if (state.sync.connected && state.sync.config) return true;
-        showActionMessage('Connect GitHub first from Sync / Storage settings.', 'error');
+        showActionMessage('Connect GitHub first from Storage & Sync.', 'error');
         return false;
       }
 
@@ -2510,7 +2428,13 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         if (!state.currentMap) return;
         if (autosaveTimer) clearTimeout(autosaveTimer);
         autosaveTimer = setTimeout(async () => {
-          await saveCurrent({ silentValidation: true, isAutosave: true });
+          try {
+            setLocalStatus('saving');
+            await saveCurrent({ silentValidation: true, isAutosave: true });
+          } catch (err) {
+            console.error(err);
+            setLocalStatus('error', 'Local autosave failed');
+          }
         }, AUTOSAVE_DELAY_MS);
       }
 
@@ -3103,7 +3027,10 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
       async function saveCurrent({ silentValidation = false, isAutosave = false } = {}) {
         if (!state.currentMap) return;
         const valid = validateRequired(state.currentMap, silentValidation);
-        if (!valid) return;
+        if (!valid) {
+          markDirty(true);
+          return;
+        }
 
         const toSave = JSON.parse(JSON.stringify(state.currentMap));
         if (!toSave.createdAt) toSave.createdAt = nowIso();
@@ -3341,7 +3268,6 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         refreshFilterToggleUi();
       });
 
-      el.saveBtn.addEventListener('click', () => saveCurrent({}));
       el.newBtn.addEventListener('click', createNewMap);
       el.menuBtn.addEventListener('click', () => {
         setMenuOpen(!state.ui.menuOpen);
@@ -3370,14 +3296,6 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
       el.exportPdfBtn.addEventListener('click', () => {
         closeActionsMenu();
         exportCurrentMapPdf();
-      });
-      el.syncSettingsBtn.addEventListener('click', () => {
-        closeActionsMenu();
-        openSyncModal();
-      });
-      el.closeSyncModalBtn.addEventListener('click', closeSyncModal);
-      el.syncModal.addEventListener('click', (e) => {
-        if (e.target === el.syncModal) closeSyncModal();
       });
       el.connectGithubBtn.addEventListener('click', connectGithub);
       el.disconnectGithubBtn.addEventListener('click', disconnectGithub);
