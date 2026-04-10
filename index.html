@@ -232,6 +232,17 @@
       font-size: 11px;
     }
 
+    .inline-link {
+      font-size: 12px;
+      color: #1d4ed8;
+      text-decoration: none;
+      width: fit-content;
+    }
+
+    .inline-link:hover {
+      text-decoration: underline;
+    }
+
     .editor {
       min-width: 0;
       display: flex;
@@ -1125,6 +1136,7 @@
           dealValue: '',
           forecastCategory: '',
           closeDate: '',
+          hubspotDealUrl: '',
           salesOwner: '',
           economicBuyer: '',
           champion: '',
@@ -1243,6 +1255,15 @@
 
       function hasValue(value) {
         return String(value ?? '').trim().length > 0;
+      }
+
+      function normalizeHubspotDealUrl(value) {
+        return String(value ?? '').trim();
+      }
+
+      function isValidHttpUrl(value) {
+        const normalized = normalizeHubspotDealUrl(value);
+        return /^https?:\/\//i.test(normalized);
       }
 
       function findScorecardRow(mapObj, element) {
@@ -2068,6 +2089,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         cleaned.id = typeof rawMap.id === 'string' && rawMap.id.trim() ? rawMap.id : uid();
         cleaned.createdAt = rawMap.createdAt || nowIso();
         cleaned.updatedAt = rawMap.updatedAt || nowIso();
+        cleaned.hubspotDealUrl = normalizeHubspotDealUrl(rawMap.hubspotDealUrl || '');
         Object.keys(TABLE_SCHEMAS).forEach((key) => {
           cleaned[key] = Array.isArray(rawMap[key]) ? rawMap[key] : [];
         });
@@ -2117,13 +2139,14 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
 
         addSection(
           'Summary',
-          ['Opportunity Name', 'Account Name', 'Deal Value', 'Forecast Category', 'Close Date', 'Sales Owner', 'Economic Buyer', 'Champion', 'Overall Health', 'Notes'],
+          ['Opportunity Name', 'Account Name', 'Deal Value', 'Forecast Category', 'Close Date', 'HubSpot Deal URL', 'Sales Owner', 'Economic Buyer', 'Champion', 'Overall Health', 'Notes'],
           [[
             mapObj.opportunityName || '',
             mapObj.accountName || '',
             mapObj.dealValue || '',
             mapObj.forecastCategory || '',
             mapObj.closeDate || '',
+            normalizeHubspotDealUrl(mapObj.hubspotDealUrl || ''),
             mapObj.salesOwner || '',
             mapObj.economicBuyer || '',
             mapObj.champion || '',
@@ -2534,6 +2557,8 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         const completeCount = MEDDPIC_ELEMENTS.filter((e) => completeness[e] === 'complete').length;
         const topWarning = health.warnings[0] || 'No critical warning.';
         const healthClass = `health-${health.healthLabel.toLowerCase()}`;
+        const hubspotUrl = normalizeHubspotDealUrl(state.currentMap.hubspotDealUrl);
+        const hasHubspotLink = isValidHttpUrl(hubspotUrl);
 
         const strip = document.createElement('section');
         strip.className = 'inspection-strip';
@@ -2564,6 +2589,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
               <div class="inspection-value">${escapeHtml(topWarning)}</div>
             </div>
           </div>
+          ${hasHubspotLink ? `<div><a class="inline-link" data-hubspot-quick-action href="${escapeHtml(hubspotUrl)}" target="_blank" rel="noopener noreferrer">Open HubSpot</a></div>` : ''}
           <div class="meddpic-chip-row">${MEDDPIC_ELEMENTS.map((elName) => {
             const status = completeness[elName];
             return `<button type="button" class="status-chip status-${status}" data-meddpic-chip="${escapeHtml(elName)}"><span class="chip-name">${escapeHtml(elName)}</span><span class="chip-state">${escapeHtml(status)}</span></button>`;
@@ -2604,6 +2630,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           ['accountName', 'Account Name', 'text', true],
           ['dealValue', 'Deal Value', 'number', false],
           ['closeDate', 'Close Date', 'date', false],
+          ['hubspotDealUrl', 'HubSpot Deal URL', 'url', false],
           ['salesOwner', 'Sales Owner', 'text', true],
           ['economicBuyer', 'Economic Buyer', 'text', false],
           ['champion', 'Champion', 'text', false]
@@ -2622,10 +2649,40 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
 
           const input = document.createElement('input');
           input.type = type;
-          input.value = state.currentMap[key] || '';
-          input.addEventListener('input', (e) => updateCurrentField(key, e.target.value));
+          input.value = key === 'hubspotDealUrl' ? normalizeHubspotDealUrl(state.currentMap[key]) : (state.currentMap[key] || '');
+          if (key === 'hubspotDealUrl') {
+            input.placeholder = 'https://app.hubspot.com/contacts/123456789/record/0-3/987654321';
+          }
+
+          let validationMessage = null;
+          let openLink = null;
+          if (key === 'hubspotDealUrl') {
+            validationMessage = document.createElement('small');
+            validationMessage.className = 'warning-inline';
+            validationMessage.hidden = true;
+            openLink = document.createElement('a');
+            openLink.className = 'inline-link';
+            openLink.target = '_blank';
+            openLink.rel = 'noopener noreferrer';
+            openLink.textContent = 'Open HubSpot Deal';
+            openLink.hidden = true;
+          }
+          input.addEventListener('input', (e) => {
+            if (key === 'hubspotDealUrl') {
+              const trimmedValue = normalizeHubspotDealUrl(e.target.value);
+              e.target.value = trimmedValue;
+              updateCurrentField(key, trimmedValue);
+              syncHubspotUi(trimmedValue, validationMessage, openLink);
+              return;
+            }
+            updateCurrentField(key, e.target.value);
+          });
 
           wrap.append(lab, input);
+          if (key === 'hubspotDealUrl') {
+            wrap.append(validationMessage, openLink);
+            syncHubspotUi(normalizeHubspotDealUrl(state.currentMap[key]), validationMessage, openLink);
+          }
           grid.appendChild(wrap);
         });
 
@@ -2664,6 +2721,30 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         grid.appendChild(notesWrap);
 
         panel.appendChild(grid);
+      }
+
+      function syncHubspotUi(urlValue, validationEl, openLinkEl) {
+        const value = normalizeHubspotDealUrl(urlValue);
+        const isBlank = value.length === 0;
+        const isValid = isValidHttpUrl(value);
+
+        if (validationEl) {
+          validationEl.hidden = isBlank || isValid;
+          validationEl.textContent = 'Enter a URL starting with http:// or https://';
+        }
+
+        if (openLinkEl) {
+          openLinkEl.hidden = !isValid;
+          openLinkEl.href = isValid ? value : '#';
+        }
+
+        el.panels.querySelectorAll('[data-hubspot-quick-action]').forEach((quickLinkEl) => {
+          if (!isValid) {
+            quickLinkEl.remove();
+            return;
+          }
+          quickLinkEl.href = value;
+        });
       }
 
       function createCellEditor(arrayKey, rowIndex, colIndex, value) {
@@ -2954,6 +3035,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           ['Deal Value', mapObj.dealValue],
           ['Forecast Category', mapObj.forecastCategory],
           ['Close Date', mapObj.closeDate],
+          ['HubSpot Deal URL', normalizeHubspotDealUrl(mapObj.hubspotDealUrl || '')],
           ['Sales Owner', mapObj.salesOwner],
           ['Economic Buyer', mapObj.economicBuyer],
           ['Champion', mapObj.champion],
