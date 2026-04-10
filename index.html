@@ -307,6 +307,7 @@
     <button id="saveBtn" type="button">Save</button>
     <button id="duplicateBtn" type="button">Duplicate</button>
     <button id="deleteBtn" type="button">Delete</button>
+    <button id="exportCsvBtn" type="button">Export CSV</button>
     <button id="exportJsonBtn" type="button">Export JSON Backup</button>
     <button id="importJsonBtn" type="button">Import JSON</button>
     <input id="importJsonInput" type="file" accept="application/json,.json" hidden />
@@ -433,6 +434,7 @@
         newBtn: document.getElementById('newBtn'),
         duplicateBtn: document.getElementById('duplicateBtn'),
         deleteBtn: document.getElementById('deleteBtn'),
+        exportCsvBtn: document.getElementById('exportCsvBtn'),
         exportJsonBtn: document.getElementById('exportJsonBtn'),
         importJsonBtn: document.getElementById('importJsonBtn'),
         importJsonInput: document.getElementById('importJsonInput'),
@@ -621,6 +623,87 @@
           cleaned[key] = Array.isArray(rawMap[key]) ? rawMap[key] : [];
         });
         return cleaned;
+      }
+
+      function csvEscape(value) {
+        const str = String(value ?? '');
+        if (/[",\n\r]/.test(str)) {
+          return `"${str.replaceAll('"', '""')}"`;
+        }
+        return str;
+      }
+
+      function sanitizeFilenamePart(value, fallback) {
+        const cleaned = String(value || '')
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        return cleaned || fallback;
+      }
+
+      function buildMapCsvRows(mapObj) {
+        const rows = [];
+        const addSection = (sectionTitle, headers, dataRows) => {
+          rows.push([sectionTitle]);
+          rows.push(headers);
+          dataRows.forEach((r) => rows.push(r));
+          rows.push([]);
+        };
+
+        addSection(
+          'Summary',
+          ['Opportunity Name', 'Account Name', 'Deal Value', 'Forecast Category', 'Close Date', 'Sales Owner', 'Economic Buyer', 'Champion', 'Overall Health', 'Notes'],
+          [[
+            mapObj.opportunityName || '',
+            mapObj.accountName || '',
+            mapObj.dealValue || '',
+            mapObj.forecastCategory || '',
+            mapObj.closeDate || '',
+            mapObj.salesOwner || '',
+            mapObj.economicBuyer || '',
+            mapObj.champion || '',
+            mapObj.overallHealth || '',
+            mapObj.notes || ''
+          ]]
+        );
+
+        addSection('MEDDPIC Scorecard', TABLE_SCHEMAS.meddpicScorecard, Array.isArray(mapObj.meddpicScorecard) ? mapObj.meddpicScorecard : []);
+        addSection('Metrics', TABLE_SCHEMAS.metrics, Array.isArray(mapObj.metrics) ? mapObj.metrics : []);
+        addSection('Stakeholders', TABLE_SCHEMAS.stakeholders, Array.isArray(mapObj.stakeholders) ? mapObj.stakeholders : []);
+        addSection('Decision Process', TABLE_SCHEMAS.decisionProcess, Array.isArray(mapObj.decisionProcess) ? mapObj.decisionProcess : []);
+        addSection('Paper Process', TABLE_SCHEMAS.paperProcess, Array.isArray(mapObj.paperProcess) ? mapObj.paperProcess : []);
+        addSection('Competition', TABLE_SCHEMAS.competition, Array.isArray(mapObj.competition) ? mapObj.competition : []);
+        addSection('Action Plan', TABLE_SCHEMAS.actionPlan, Array.isArray(mapObj.actionPlan) ? mapObj.actionPlan : []);
+
+        return rows;
+      }
+
+      function exportCurrentMapCsv() {
+        if (!state.currentMap) {
+          showActionMessage('No MAP selected. Please select a MAP first.', 'error');
+          return;
+        }
+
+        const rows = buildMapCsvRows(state.currentMap);
+        const csvText = rows
+          .map((row) => row.map((cell) => csvEscape(cell)).join(','))
+          .join('\r\n');
+
+        const safeAccount = sanitizeFilenamePart(state.currentMap.accountName, 'unknown-account');
+        const safeOpportunity = sanitizeFilenamePart(state.currentMap.opportunityName, 'unknown-opportunity');
+        const filename = `meddpic-map-${safeAccount}-${safeOpportunity}-${dateStamp()}.csv`;
+
+        const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showActionMessage(`Exported CSV for "${state.currentMap.opportunityName || 'current MAP'}".`);
       }
 
       async function exportJsonBackup() {
@@ -1195,6 +1278,7 @@
       el.newBtn.addEventListener('click', createNewMap);
       el.duplicateBtn.addEventListener('click', duplicateCurrent);
       el.deleteBtn.addEventListener('click', deleteCurrent);
+      el.exportCsvBtn.addEventListener('click', exportCurrentMapCsv);
       el.exportJsonBtn.addEventListener('click', exportJsonBackup);
       el.importJsonBtn.addEventListener('click', () => el.importJsonInput.click());
       el.importJsonInput.addEventListener('change', (e) => importJsonBackup(e.target.files && e.target.files[0]));
