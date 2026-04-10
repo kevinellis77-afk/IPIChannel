@@ -771,6 +771,7 @@
         sync: {
           connected: false,
           config: null,
+          remoteSha: null,
           lastSyncAt: null,
           unsynced: false,
           lastError: ''
@@ -1266,6 +1267,10 @@
         localStorage.removeItem(GITHUB_CONFIG_KEY);
       }
 
+      function getTrimmedGitHubConfig(config = {}) {
+        return sanitizeGitHubConfig(config);
+      }
+
       function markUnsynced(value = true) {
         state.sync.unsynced = value;
         el.syncUnsavedBadge.hidden = !value;
@@ -1407,8 +1412,8 @@
         return false;
       }
 
-      async function githubRequest(method, endpoint, body = null) {
-        const cfg = state.sync.config;
+      async function githubRequest(config, method, endpoint, body = null) {
+        const cfg = getTrimmedGitHubConfig(config || state.sync.config || {});
         const url = `https://api.github.com${endpoint}`;
         const headers = getGitHubHeaders(cfg.token);
         if (body) headers['Content-Type'] = 'application/json';
@@ -1434,21 +1439,123 @@
         return `/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encodedPath}`;
       }
 
-      async function fetchGithubDataFile() {
-        const cfg = state.sync.config;
+      async function fetchRemoteFileMeta(config = null) {
+        const cfg = validateGitHubConfig(getTrimmedGitHubConfig(config || state.sync.config || {}));
         const endpoint = `${getGithubContentsEndpoint(cfg)}?ref=${encodeURIComponent(cfg.branch)}`;
+        console.log('[GitHub] fetchRemoteFileMeta start', {
+          owner: cfg.owner,
+          repo: cfg.repo,
+          branch: cfg.branch,
+          path: cfg.path,
+          token: maskToken(cfg.token)
+        });
         try {
-          const file = await githubRequest('GET', endpoint);
-          const text = getUtf8FromBase64(file.content || '');
-          const parsed = JSON.parse(text);
+          const file = await githubRequest(cfg, 'GET', endpoint);
+          const content = file.content ? getUtf8FromBase64(file.content) : '';
+          console.log('[GitHub] fetchRemoteFileMeta fetched sha', file.sha || '(none)');
+          return {
+            exists: true,
+            sha: file.sha || null,
+            content,
+            path: cfg.path,
+            branch: cfg.branch
+          };
+        } catch (err) {
+          if (err.status === 404) {
+            console.log('[GitHub] fetchRemoteFileMeta file missing (404)', { path: cfg.path, branch: cfg.branch });
+            return { exists: false, sha: null, content: null, path: cfg.path, branch: cfg.branch };
+          }
+          throw err;
+        }
+      }
+
+      async function fetchGithubDataFile(config = null) {
+        const remoteMeta = await fetchRemoteFileMeta(config || state.sync.config);
+        if (!remoteMeta.exists) return { exists: false, sha: null, data: null };
+        try {
+          const parsed = JSON.parse(remoteMeta.content || '{}');
           if (!parsed || !Array.isArray(parsed.maps)) {
             throw new Error('GitHub JSON is invalid. Expected { version, updatedAt, maps }.');
           }
-          return { exists: true, sha: file.sha, data: parsed };
+          state.sync.remoteSha = remoteMeta.sha || null;
+          return { exists: true, sha: remoteMeta.sha, data: parsed };
         } catch (err) {
-          if (err.status === 404) return { exists: false, sha: null, data: null };
+          if (err.message.includes('GitHub JSON is invalid')) throw err;
+          throw new Error('GitHub JSON is invalid or unreadable.');
+        }
+      }
+
+      function isGitHubShaConflict(err) {
+        const msg = String(err?.message || '');
+        return err?.status === 409 || ((err?.status === 422 || err?.status === 400) && /(sha|match|conflict)/i.test(msg));
+      }
+
+      function mapGitHubError(err) {
+        if (err?.status === 401 || err?.status === 403) return 'GitHub token is invalid or lacks required repository permissions (401/403).';
+        if (err?.status === 422) return 'GitHub rejected the request (422). Check branch, path, and required fields.';
+        if (isGitHubShaConflict(err)) return 'The GitHub file changed since your last sync. Reload from GitHub or retry save.';
+        return err?.message || 'GitHub request failed.';
+      }
+
+      async function pushRemoteData(config, data) {
+        const cfg = validateGitHubConfig(getTrimmedGitHubConfig(config || {}));
+        const latestMeta = await fetchRemoteFileMeta(cfg);
+        if (!latestMeta.exists || !latestMeta.sha) {
+          return createRemoteFile(cfg, data);
+        }
+        const body = {
+          message: `Update MEDDPIC MAP data ${new Date().toISOString()}`,
+          content: getBase64FromUtf8(JSON.stringify(data, null, 2)),
+          branch: cfg.branch,
+          sha: latestMeta.sha
+        };
+        console.log('[GitHub] PUT update request', { path: cfg.path, branch: cfg.branch, sha: latestMeta.sha });
+        try {
+          const response = await githubRequest(cfg, 'PUT', getGithubContentsEndpoint(cfg), body);
+          const savedSha = response?.content?.sha || null;
+          console.log('[GitHub] PUT success', { status: 'ok', sha: savedSha || '(missing)' });
+          state.sync.remoteSha = savedSha;
+          return response;
+        } catch (err) {
+          console.error('[GitHub] PUT failure', err?.status, err?.message, err?.payload || '');
           throw err;
         }
+      }
+
+      async function createRemoteFile(config, data) {
+        const cfg = validateGitHubConfig(getTrimmedGitHubConfig(config || {}));
+        const body = {
+          message: `Create MEDDPIC MAP data file ${new Date().toISOString()}`,
+          content: getBase64FromUtf8(JSON.stringify(data, null, 2)),
+          branch: cfg.branch
+        };
+        console.log('[GitHub] PUT create request', { path: cfg.path, branch: cfg.branch });
+        try {
+          const response = await githubRequest(cfg, 'PUT', getGithubContentsEndpoint(cfg), body);
+          const savedSha = response?.content?.sha || null;
+          console.log('[GitHub] PUT success', { status: 'ok', sha: savedSha || '(missing)' });
+          state.sync.remoteSha = savedSha;
+          return response;
+        } catch (err) {
+          console.error('[GitHub] PUT failure', err?.status, err?.message, err?.payload || '');
+          throw err;
+        }
+      }
+
+      async function saveToGitHubWithFreshSha(config, data) {
+        const cfg = validateGitHubConfig(getTrimmedGitHubConfig(config || {}));
+        console.log('[GitHub] saveToGitHubWithFreshSha start', {
+          owner: cfg.owner,
+          repo: cfg.repo,
+          branch: cfg.branch,
+          path: cfg.path,
+          token: maskToken(cfg.token)
+        });
+        const meta = await fetchRemoteFileMeta(cfg);
+        if (meta.exists) {
+          return pushRemoteData(cfg, data);
+        }
+        return createRemoteFile(cfg, data);
       }
 
       function askConflictAction(localUpdatedAt, remoteUpdatedAt) {
@@ -1514,7 +1621,8 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         if (!ensureGithubConnected()) return;
         try {
           setSyncError('');
-          const remote = await fetchGithubDataFile();
+          const cfg = validateGitHubConfig(getTrimmedGitHubConfig(state.sync.config || {}));
+          const remote = await fetchGithubDataFile(cfg);
           const localMaps = await idbGetAll();
           const localUpdatedAt = getLocalDataUpdatedAt() || nowIso();
           const remoteUpdatedAt = remote.data?.updatedAt || null;
@@ -1534,13 +1642,27 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
             updatedAt: nowIso(),
             maps: localMaps
           };
-          const cfg = state.sync.config;
-          await githubRequest('PUT', getGithubContentsEndpoint(cfg), {
-            message: `Update MEDDPIC MAP data ${new Date().toISOString()}`,
-            content: getBase64FromUtf8(JSON.stringify(payload, null, 2)),
-            branch: cfg.branch,
-            sha: remote.sha || undefined
-          });
+          let saved = null;
+          try {
+            saved = await saveToGitHubWithFreshSha(cfg, payload);
+          } catch (err) {
+            if (!isGitHubShaConflict(err)) throw err;
+            const choice = prompt(
+              'The GitHub file changed since your last sync. Reload from GitHub or retry save.\nType RELOAD, RETRY, or CANCEL.'
+            );
+            const selected = (choice || '').trim().toLowerCase();
+            if (selected === 'reload') {
+              await loadFromGithub();
+              return;
+            }
+            if (selected === 'retry') {
+              saved = await saveToGitHubWithFreshSha(cfg, payload);
+            } else {
+              showActionMessage('GitHub save cancelled.', 'error');
+              return;
+            }
+          }
+          state.sync.remoteSha = saved?.content?.sha || state.sync.remoteSha || null;
           setLocalDataUpdatedAt(payload.updatedAt);
           state.sync.lastSyncAt = nowIso();
           localStorage.setItem(LAST_SYNC_AT_KEY, state.sync.lastSyncAt);
@@ -1549,8 +1671,9 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           showActionMessage(`Saved ${localMaps.length} MAP(s) to GitHub.`);
         } catch (err) {
           console.error(err);
-          setSyncError(err.message || 'Failed to save to GitHub.');
-          showActionMessage(err.message || 'Save to GitHub failed.', 'error');
+          const mappedMessage = mapGitHubError(err);
+          setSyncError(mappedMessage);
+          showActionMessage(mappedMessage, 'error');
         }
       }
 
@@ -1558,20 +1681,18 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         if (!ensureGithubConnected()) return;
         try {
           setSyncError('');
-          const remote = await fetchGithubDataFile();
+          const cfg = validateGitHubConfig(getTrimmedGitHubConfig(state.sync.config || {}));
+          const remote = await fetchGithubDataFile(cfg);
           if (remote.exists) {
             const proceed = confirm('GitHub data file already exists. Overwrite it?');
             if (!proceed) return;
           }
           const localMaps = await idbGetAll();
           const payload = { version: 1, updatedAt: nowIso(), maps: localMaps };
-          const cfg = state.sync.config;
-          await githubRequest('PUT', getGithubContentsEndpoint(cfg), {
-            message: `Create MEDDPIC MAP data file ${new Date().toISOString()}`,
-            content: getBase64FromUtf8(JSON.stringify(payload, null, 2)),
-            branch: cfg.branch,
-            sha: remote.sha || undefined
-          });
+          const saved = remote.exists
+            ? await pushRemoteData(cfg, payload)
+            : await createRemoteFile(cfg, payload);
+          state.sync.remoteSha = saved?.content?.sha || state.sync.remoteSha || null;
           setLocalDataUpdatedAt(payload.updatedAt);
           state.sync.lastSyncAt = nowIso();
           localStorage.setItem(LAST_SYNC_AT_KEY, state.sync.lastSyncAt);
@@ -1580,8 +1701,9 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           showActionMessage('GitHub data file created.');
         } catch (err) {
           console.error(err);
-          setSyncError(err.message || 'Failed to create GitHub file.');
-          showActionMessage(err.message || 'Create GitHub file failed.', 'error');
+          const mappedMessage = mapGitHubError(err);
+          setSyncError(mappedMessage);
+          showActionMessage(mappedMessage, 'error');
         }
       }
 
