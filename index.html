@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MEDDPIC MAP Manager</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #374151;
+      --accent: #3b82f6;
+      --danger: #ef4444;
+      --ok: #10b981;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      flex-wrap: wrap;
+    }
+
+    .app-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-right: 8px;
+      white-space: nowrap;
+    }
+
+    button, input, select, textarea {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    .search-input {
+      margin-left: auto;
+      min-width: 220px;
+    }
+
+    .status {
+      margin-left: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: var(--panel);
+      overflow: auto;
+      padding: 8px;
+    }
+
+    .sidebar h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 6px 8px 10px;
+      letter-spacing: 0.8px;
+    }
+
+    .map-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .map-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      background: #0b1220;
+      cursor: pointer;
+    }
+
+    .map-item.active {
+      border-color: var(--accent);
+      background: #0a1b3f;
+    }
+
+    .map-item .title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .map-item .meta {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .editor {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .tab-btn {
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+
+    .tab-btn.active {
+      border-color: var(--accent);
+      background: #0a1b3f;
+    }
+
+    .tab-panel {
+      display: none;
+      overflow: auto;
+      padding: 14px;
+      height: 100%;
+    }
+
+    .tab-panel.active { display: block; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      align-items: start;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-field label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .required::after {
+      content: " *";
+      color: var(--danger);
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: auto;
+      background: #0b1220;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #121a2b;
+      font-size: 12px;
+      color: var(--muted);
+      position: sticky;
+      top: 0;
+    }
+
+    td input {
+      width: 100%;
+      min-width: 120px;
+      padding: 6px 8px;
+    }
+
+    .table-actions {
+      margin-top: 8px;
+    }
+
+    .remove-btn {
+      background: #2a1217;
+      border-color: #5b1f2a;
+    }
+
+    .unsaved-pill {
+      color: #fbbf24;
+      font-size: 12px;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="app-title">MEDDPIC MAP Manager</div>
+    <button id="newBtn" type="button">New MAP</button>
+    <button id="saveBtn" type="button">Save</button>
+    <button id="duplicateBtn" type="button">Duplicate</button>
+    <button id="deleteBtn" type="button">Delete</button>
+    <input id="searchInput" class="search-input" type="search" placeholder="Search MAPs" />
+    <span id="cacheStatus" class="status">Local Cache</span>
+    <span id="unsavedIndicator" class="unsaved-pill" hidden>Unsaved changes</span>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <h2>Saved MAPs</h2>
+      <div id="mapList" class="map-list"></div>
+    </aside>
+
+    <main class="editor">
+      <nav id="tabs" class="tabs"></nav>
+      <section id="panels" style="flex:1; min-height:0;"></section>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const DB_NAME = 'meddpic-map-manager';
+      const DB_VERSION = 1;
+      const STORE_NAME = 'maps';
+
+      const TABS = [
+        'Summary',
+        'MEDDPIC Scorecard',
+        'Metrics',
+        'Stakeholders',
+        'Decision Process',
+        'Paper Process',
+        'Competition',
+        'Action Plan'
+      ];
+
+      const TABLE_SCHEMAS = {
+        meddpicScorecard: ['Element', 'Status', 'Evidence', 'Owner', 'Notes'],
+        metrics: ['Metric', 'Current', 'Target', 'Impact', 'Notes'],
+        stakeholders: ['Name', 'Role', 'Influence', 'Support', 'Notes'],
+        decisionProcess: ['Step', 'Owner', 'Due Date', 'Status', 'Notes'],
+        paperProcess: ['Document', 'Owner', 'Stage', 'Due Date', 'Notes'],
+        competition: ['Competitor', 'Strength', 'Weakness', 'Status', 'Notes'],
+        actionPlan: ['Action', 'Owner', 'Due Date', 'Status', 'Notes']
+      };
+
+      const state = {
+        maps: [],
+        currentMapId: null,
+        currentMap: null,
+        activeTab: 'Summary',
+        dirty: false,
+        search: ''
+      };
+
+      const el = {
+        mapList: document.getElementById('mapList'),
+        tabs: document.getElementById('tabs'),
+        panels: document.getElementById('panels'),
+        searchInput: document.getElementById('searchInput'),
+        saveBtn: document.getElementById('saveBtn'),
+        newBtn: document.getElementById('newBtn'),
+        duplicateBtn: document.getElementById('duplicateBtn'),
+        deleteBtn: document.getElementById('deleteBtn'),
+        unsavedIndicator: document.getElementById('unsavedIndicator')
+      };
+
+      function uid() {
+        return crypto.randomUUID();
+      }
+
+      function nowIso() {
+        return new Date().toISOString();
+      }
+
+      function createEmptyMap() {
+        const timestamp = nowIso();
+        return {
+          id: uid(),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          opportunityName: '',
+          accountName: '',
+          dealValue: '',
+          forecastCategory: '',
+          closeDate: '',
+          salesOwner: '',
+          economicBuyer: '',
+          champion: '',
+          overallHealth: '',
+          notes: '',
+          meddpicScorecard: [],
+          metrics: [],
+          stakeholders: [],
+          decisionProcess: [],
+          paperProcess: [],
+          competition: [],
+          actionPlan: []
+        };
+      }
+
+      function createSampleMap() {
+        const sample = createEmptyMap();
+        sample.opportunityName = 'Q3 Platform Expansion';
+        sample.accountName = 'Acme Financial';
+        sample.dealValue = '250000';
+        sample.forecastCategory = 'Commit';
+        sample.closeDate = '2026-07-30';
+        sample.salesOwner = 'Jordan Lee';
+        sample.economicBuyer = 'Rita Shah';
+        sample.champion = 'Darren Wong';
+        sample.overallHealth = 'Yellow';
+        sample.notes = 'Pilot finished. Procurement review starts next week.';
+        sample.meddpicScorecard.push(['Metrics', 'In Progress', 'Baseline validated', 'Jordan Lee', 'Need executive sign-off']);
+        sample.metrics.push(['Cycle time reduction', '18%', '30%', 'Operational efficiency', 'Need final benchmark']);
+        sample.stakeholders.push(['Rita Shah', 'CFO', 'High', 'Supportive', 'Focused on ROI']);
+        sample.decisionProcess.push(['Security review', 'IT Security', '2026-05-10', 'Pending', 'Questionnaire sent']);
+        sample.paperProcess.push(['MSA redlines', 'Legal', 'Drafting', '2026-05-22', 'Customer requested new clause']);
+        sample.competition.push(['Contoso Suite', 'Incumbent relationship', 'Limited automation', 'Active', 'Competing at lower price']);
+        sample.actionPlan.push(['Schedule EB value recap', 'Jordan Lee', '2026-04-21', 'Open', 'Include champion in prep']);
+        return sample;
+      }
+
+      function openDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+          request.onerror = () => reject(request.error);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+        });
+      }
+
+      async function idbGetAll() {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function idbPut(mapObj) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.objectStore(STORE_NAME).put(mapObj);
+        });
+      }
+
+      async function idbDelete(id) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.objectStore(STORE_NAME).delete(id);
+        });
+      }
+
+      function validateRequired(mapObj) {
+        const required = ['opportunityName', 'accountName', 'salesOwner'];
+        const missing = required.filter((key) => !String(mapObj[key] || '').trim());
+        if (missing.length) {
+          alert('Required fields missing: ' + missing.join(', '));
+          return false;
+        }
+        return true;
+      }
+
+      function markDirty(dirty = true) {
+        state.dirty = dirty;
+        el.unsavedIndicator.hidden = !dirty;
+      }
+
+      function sortMaps(list) {
+        return [...list].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      }
+
+      function filteredMaps() {
+        const q = state.search.trim().toLowerCase();
+        if (!q) return state.maps;
+        return state.maps.filter((m) => {
+          return [m.opportunityName, m.accountName, m.salesOwner]
+            .some((v) => String(v || '').toLowerCase().includes(q));
+        });
+      }
+
+      function setCurrentMap(id) {
+        const found = state.maps.find((m) => m.id === id);
+        if (!found) return;
+        state.currentMapId = id;
+        state.currentMap = JSON.parse(JSON.stringify(found));
+        markDirty(false);
+        renderAll();
+      }
+
+      function updateCurrentField(key, value) {
+        if (!state.currentMap) return;
+        state.currentMap[key] = value;
+        markDirty(true);
+      }
+
+      function updateTableCell(arrayKey, rowIndex, colIndex, value) {
+        if (!state.currentMap) return;
+        const rows = state.currentMap[arrayKey];
+        if (!rows[rowIndex]) return;
+        rows[rowIndex][colIndex] = value;
+        markDirty(true);
+      }
+
+      function addTableRow(arrayKey) {
+        if (!state.currentMap) return;
+        const colCount = TABLE_SCHEMAS[arrayKey].length;
+        state.currentMap[arrayKey].push(Array(colCount).fill(''));
+        markDirty(true);
+        renderPanels();
+      }
+
+      function removeTableRow(arrayKey, index) {
+        if (!state.currentMap) return;
+        state.currentMap[arrayKey].splice(index, 1);
+        markDirty(true);
+        renderPanels();
+      }
+
+      function renderSidebar() {
+        const maps = filteredMaps();
+        el.mapList.innerHTML = '';
+        maps.forEach((m) => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'map-item' + (m.id === state.currentMapId ? ' active' : '');
+          item.innerHTML = `
+            <div class="title">${escapeHtml(m.opportunityName || '(Untitled Opportunity)')}</div>
+            <div class="meta">${escapeHtml(m.accountName || '(No Account)')} • ${escapeHtml(m.salesOwner || '(No Owner)')}</div>
+          `;
+          item.addEventListener('click', () => setCurrentMap(m.id));
+          el.mapList.appendChild(item);
+        });
+      }
+
+      function renderTabs() {
+        el.tabs.innerHTML = '';
+        TABS.forEach((tab) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'tab-btn' + (state.activeTab === tab ? ' active' : '');
+          b.textContent = tab;
+          b.addEventListener('click', () => {
+            state.activeTab = tab;
+            renderPanels();
+            renderTabs();
+          });
+          el.tabs.appendChild(b);
+        });
+      }
+
+      function renderSummaryPanel(panel) {
+        if (!state.currentMap) return;
+        const fields = [
+          ['opportunityName', 'Opportunity Name', 'text', true],
+          ['accountName', 'Account Name', 'text', true],
+          ['dealValue', 'Deal Value', 'number', false],
+          ['forecastCategory', 'Forecast Category', 'text', false],
+          ['closeDate', 'Close Date', 'date', false],
+          ['salesOwner', 'Sales Owner', 'text', true],
+          ['economicBuyer', 'Economic Buyer', 'text', false],
+          ['champion', 'Champion', 'text', false],
+          ['overallHealth', 'Overall Health', 'text', false]
+        ];
+
+        const grid = document.createElement('div');
+        grid.className = 'form-grid';
+
+        fields.forEach(([key, label, type, required]) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'form-field';
+
+          const lab = document.createElement('label');
+          lab.textContent = label;
+          if (required) lab.classList.add('required');
+
+          const input = document.createElement('input');
+          input.type = type;
+          input.value = state.currentMap[key] || '';
+          input.addEventListener('input', (e) => updateCurrentField(key, e.target.value));
+
+          wrap.append(lab, input);
+          grid.appendChild(wrap);
+        });
+
+        const notesWrap = document.createElement('div');
+        notesWrap.className = 'form-field';
+        notesWrap.style.gridColumn = '1 / -1';
+
+        const notesLabel = document.createElement('label');
+        notesLabel.textContent = 'Notes';
+
+        const notes = document.createElement('textarea');
+        notes.value = state.currentMap.notes || '';
+        notes.addEventListener('input', (e) => updateCurrentField('notes', e.target.value));
+
+        notesWrap.append(notesLabel, notes);
+        grid.appendChild(notesWrap);
+
+        panel.appendChild(grid);
+      }
+
+      function renderTablePanel(panel, arrayKey) {
+        if (!state.currentMap) return;
+
+        const headers = TABLE_SCHEMAS[arrayKey];
+        const rows = state.currentMap[arrayKey] || [];
+
+        const wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+
+        headers.forEach((h) => {
+          const th = document.createElement('th');
+          th.textContent = h;
+          headRow.appendChild(th);
+        });
+        const thAction = document.createElement('th');
+        thAction.textContent = 'Actions';
+        headRow.appendChild(thAction);
+        thead.appendChild(headRow);
+
+        const tbody = document.createElement('tbody');
+        rows.forEach((row, rowIndex) => {
+          const tr = document.createElement('tr');
+          headers.forEach((_, colIndex) => {
+            const td = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = row[colIndex] || '';
+            input.addEventListener('input', (e) => updateTableCell(arrayKey, rowIndex, colIndex, e.target.value));
+            td.appendChild(input);
+            tr.appendChild(td);
+          });
+
+          const tdAction = document.createElement('td');
+          const rmBtn = document.createElement('button');
+          rmBtn.type = 'button';
+          rmBtn.className = 'remove-btn';
+          rmBtn.textContent = 'Remove';
+          rmBtn.addEventListener('click', () => removeTableRow(arrayKey, rowIndex));
+          tdAction.appendChild(rmBtn);
+          tr.appendChild(tdAction);
+          tbody.appendChild(tr);
+        });
+
+        table.append(thead, tbody);
+        wrap.appendChild(table);
+        panel.appendChild(wrap);
+
+        const actions = document.createElement('div');
+        actions.className = 'table-actions';
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.textContent = 'Add Row';
+        addBtn.addEventListener('click', () => addTableRow(arrayKey));
+        actions.appendChild(addBtn);
+        panel.appendChild(actions);
+      }
+
+      function renderPanels() {
+        el.panels.innerHTML = '';
+
+        TABS.forEach((tab) => {
+          const panel = document.createElement('section');
+          panel.className = 'tab-panel' + (tab === state.activeTab ? ' active' : '');
+
+          if (!state.currentMap) {
+            panel.textContent = 'No MAP selected.';
+            el.panels.appendChild(panel);
+            return;
+          }
+
+          if (tab === 'Summary') {
+            renderSummaryPanel(panel);
+          } else {
+            const keyMap = {
+              'MEDDPIC Scorecard': 'meddpicScorecard',
+              'Metrics': 'metrics',
+              'Stakeholders': 'stakeholders',
+              'Decision Process': 'decisionProcess',
+              'Paper Process': 'paperProcess',
+              'Competition': 'competition',
+              'Action Plan': 'actionPlan'
+            };
+            renderTablePanel(panel, keyMap[tab]);
+          }
+
+          el.panels.appendChild(panel);
+        });
+      }
+
+      function renderAll() {
+        renderSidebar();
+        renderTabs();
+        renderPanels();
+      }
+
+      async function saveCurrent() {
+        if (!state.currentMap) return;
+        if (!validateRequired(state.currentMap)) return;
+
+        const toSave = JSON.parse(JSON.stringify(state.currentMap));
+        if (!toSave.createdAt) toSave.createdAt = nowIso();
+        toSave.updatedAt = nowIso();
+
+        await idbPut(toSave);
+
+        const idx = state.maps.findIndex((m) => m.id === toSave.id);
+        if (idx >= 0) {
+          state.maps[idx] = toSave;
+        } else {
+          state.maps.push(toSave);
+        }
+        state.maps = sortMaps(state.maps);
+        state.currentMap = JSON.parse(JSON.stringify(toSave));
+        state.currentMapId = toSave.id;
+        markDirty(false);
+        renderAll();
+      }
+
+      async function createNewMap() {
+        const mapObj = createEmptyMap();
+        state.currentMap = mapObj;
+        state.currentMapId = mapObj.id;
+        state.maps = sortMaps([...state.maps, mapObj]);
+        markDirty(true);
+        renderAll();
+      }
+
+      async function duplicateCurrent() {
+        if (!state.currentMap) return;
+        const cloned = JSON.parse(JSON.stringify(state.currentMap));
+        const timestamp = nowIso();
+        cloned.id = uid();
+        cloned.createdAt = timestamp;
+        cloned.updatedAt = timestamp;
+        cloned.opportunityName = (cloned.opportunityName || 'Untitled') + ' Copy';
+        await idbPut(cloned);
+        state.maps = sortMaps([...state.maps, cloned]);
+        setCurrentMap(cloned.id);
+      }
+
+      async function deleteCurrent() {
+        if (!state.currentMapId) return;
+        if (!confirm('Delete this MAP? This cannot be undone.')) return;
+
+        await idbDelete(state.currentMapId);
+        state.maps = state.maps.filter((m) => m.id !== state.currentMapId);
+        const next = state.maps[0] || null;
+        state.currentMapId = next ? next.id : null;
+        state.currentMap = next ? JSON.parse(JSON.stringify(next)) : null;
+        markDirty(false);
+        renderAll();
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      async function init() {
+        try {
+          let maps = await idbGetAll();
+          if (!maps.length) {
+            const sample = createSampleMap();
+            await idbPut(sample);
+            maps = [sample];
+          }
+
+          state.maps = sortMaps(maps);
+          state.currentMapId = state.maps[0]?.id || null;
+          state.currentMap = state.maps[0] ? JSON.parse(JSON.stringify(state.maps[0])) : null;
+          renderAll();
+        } catch (err) {
+          console.error(err);
+          alert('Failed to initialize local cache.');
+        }
+      }
+
+      el.searchInput.addEventListener('input', (e) => {
+        state.search = e.target.value;
+        renderSidebar();
+      });
+
+      el.saveBtn.addEventListener('click', saveCurrent);
+      el.newBtn.addEventListener('click', createNewMap);
+      el.duplicateBtn.addEventListener('click', duplicateCurrent);
+      el.deleteBtn.addEventListener('click', deleteCurrent);
+
+      init();
+    })();
+  </script>
+</body>
+</html>
