@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-10T14:12:21.869Z",
+  "updatedAt": "2026-04-10T15:23:44.515Z",
   "maps": [
     {
       "id": "2ddb66bc-9cd3-437d-b604-fc795a6c5b18",
       "createdAt": "2026-04-10T13:56:33.943Z",
-      "updatedAt": "2026-04-10T14:11:48.768Z",
+      "updatedAt": "2026-04-10T14:15:22.031Z",
       "opportunityName": "City of Seattle Pauseable",
       "accountName": "City of Seattle / World Wide Technology Inc",
       "dealValue": "17920",
@@ -16,7 +16,7 @@
       "economicBuyer": "David Mcdaniel",
       "champion": "",
       "overallHealth": "Amber",
-      "notes": "This is going through security and procurement review following a positive demo. The customer was happy and WWT have submitted the commercials to the customer. We are now awaiting confirmation of next steps and a decision.\n\n145 Named Pauseable Licenses via AppFoundry - £8 per license\nPlus PS Install Package. £4k",
+      "notes": "This is going through security and procurement review following a positive demo. The customer was happy and WWT have submitted the commercials to the customer. We are now awaiting confirmation of next steps and a decision.\n\n145 Named Pauseable Licenses via AppFoundry - £8 per license\nPlus PS Install Package. £4k\n\n\n",
       "meddpicScorecard": [
         [
           "Economic Buyer",
