@@ -1,2 +1,0 @@
-# IPIChannel
-IPI Channel App
