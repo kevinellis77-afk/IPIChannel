@@ -33,23 +33,26 @@
     .topbar {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px;
+      gap: 10px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
-      flex-wrap: wrap;
+      min-height: 72px;
     }
 
     .app-title {
-      margin-right: 8px;
+      margin-right: 4px;
       white-space: nowrap;
       display: flex;
       align-items: center;
+      flex: 0 0 auto;
+      width: clamp(188px, 20vw, 252px);
     }
 
     .app-title svg {
-      width: auto;
-      height: 52px;
+      width: 100%;
+      max-height: 58px;
+      height: auto;
       display: block;
     }
 
@@ -93,6 +96,7 @@
     .search-input {
       margin-left: auto;
       min-width: 220px;
+      max-width: 320px;
     }
 
     .status {
@@ -114,6 +118,75 @@
 
     .status.sync {
       color: #1d4ed8;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-left: 6px;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .menu-wrap {
+      position: relative;
+    }
+
+    .menu-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--warning);
+      position: absolute;
+      top: 7px;
+      right: 8px;
+    }
+
+    .actions-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      z-index: 25;
+      min-width: 250px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 14px 28px rgba(2, 8, 23, 0.16);
+      padding: 8px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .actions-menu[hidden] {
+      display: none;
+    }
+
+    .menu-group-label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin: 4px 6px 2px;
+      font-weight: 700;
+    }
+
+    .actions-menu button {
+      width: 100%;
+      text-align: left;
+    }
+
+    .menu-divider {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 5px 0;
     }
 
     .shell {
@@ -142,6 +215,48 @@
       display: grid;
       gap: 8px;
       margin-bottom: 12px;
+    }
+
+    .filters-toggle {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      font-weight: 600;
+    }
+
+    .filters-badge {
+      font-size: 11px;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      border-radius: 999px;
+      padding: 1px 7px;
+    }
+
+    .filters-collapsed {
+      margin-bottom: 6px;
+    }
+
+    .filters-collapsed .sidebar-controls {
+      display: none;
+    }
+
+    @media (max-width: 960px) {
+      .topbar {
+        flex-wrap: wrap;
+      }
+      .search-input {
+        order: 20;
+        margin-left: 0;
+        width: 100%;
+        max-width: none;
+      }
+      .topbar-actions {
+        margin-left: auto;
+      }
     }
 
     .sidebar-controls label {
@@ -887,25 +1002,45 @@
     </div>
     <button id="newBtn" type="button">New MAP</button>
     <button id="saveBtn" type="button">Save</button>
-    <button id="duplicateBtn" type="button">Duplicate</button>
-    <button id="deleteBtn" type="button">Delete</button>
-    <button id="exportCsvBtn" type="button">Export CSV</button>
-    <button id="exportJsonBtn" type="button">Export JSON Backup</button>
-    <button id="importJsonBtn" type="button">Import JSON</button>
-    <button id="exportPdfBtn" type="button">Export PDF</button>
     <input id="importJsonInput" type="file" accept="application/json,.json" hidden />
     <input id="searchInput" class="search-input" type="search" placeholder="Search MAPs" />
     <span id="cacheStatus" class="status saved">● Saved</span>
-    <span id="syncStatus" class="status sync">GitHub: Not connected</span>
-    <span id="syncUnsavedBadge" class="sync-pill" hidden>Unsynced changes</span>
     <span id="unsavedIndicator" class="unsaved-pill" hidden>Unsaved changes</span>
-    <button id="syncSettingsBtn" type="button">Sync / Storage</button>
+    <div class="topbar-actions">
+      <div class="menu-wrap">
+        <button id="menuBtn" class="menu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="actionsMenu">
+          Actions
+          <span id="menuSyncDot" class="sync-dot" hidden aria-hidden="true"></span>
+        </button>
+        <div id="actionsMenu" class="actions-menu" role="menu" hidden>
+          <div class="menu-group-label">Record actions</div>
+          <button id="duplicateBtn" type="button" role="menuitem">Duplicate</button>
+          <button id="deleteBtn" type="button" role="menuitem">Delete</button>
+          <hr class="menu-divider" />
+          <div class="menu-group-label">Export / Import</div>
+          <button id="exportCsvBtn" type="button" role="menuitem">Export CSV</button>
+          <button id="exportJsonBtn" type="button" role="menuitem">Export JSON Backup</button>
+          <button id="importJsonBtn" type="button" role="menuitem">Import JSON</button>
+          <button id="exportPdfBtn" type="button" role="menuitem">Export PDF</button>
+          <hr class="menu-divider" />
+          <div class="menu-group-label">Storage / Sync</div>
+          <div id="syncStatus" class="status sync">GitHub: Not connected</div>
+          <div id="syncLastSyncInfoMenu" class="status">Last sync: Never</div>
+          <span id="syncUnsavedBadge" class="sync-pill" hidden>Unsynced changes</span>
+          <button id="syncSettingsBtn" type="button" role="menuitem">Sync / Storage Settings</button>
+        </div>
+      </div>
+    </div>
   </header>
 
   <div class="shell">
     <aside class="sidebar">
       <h2>Saved MAPs</h2>
-      <div class="sidebar-controls">
+      <button id="filterToggleBtn" type="button" class="filters-toggle" aria-expanded="false" aria-controls="sidebarControls">
+        <span id="filterToggleLabel">Filters</span>
+        <span id="filterAppliedBadge" class="filters-badge" hidden>Active</span>
+      </button>
+      <div id="sidebarControls" class="sidebar-controls" hidden>
         <div>
           <label for="sortSelect">Sort by</label>
           <select id="sortSelect">
@@ -1050,6 +1185,10 @@
           lastSyncAt: null,
           unsynced: false,
           lastError: ''
+        },
+        ui: {
+          menuOpen: false,
+          filtersOpen: false
         }
       };
 
@@ -1073,11 +1212,19 @@
         importJsonBtn: document.getElementById('importJsonBtn'),
         importJsonInput: document.getElementById('importJsonInput'),
         exportPdfBtn: document.getElementById('exportPdfBtn'),
+        menuBtn: document.getElementById('menuBtn'),
+        actionsMenu: document.getElementById('actionsMenu'),
+        menuSyncDot: document.getElementById('menuSyncDot'),
         printReport: document.getElementById('printReport'),
         unsavedIndicator: document.getElementById('unsavedIndicator'),
         cacheStatus: document.getElementById('cacheStatus'),
         syncStatus: document.getElementById('syncStatus'),
         syncUnsavedBadge: document.getElementById('syncUnsavedBadge'),
+        syncLastSyncInfoMenu: document.getElementById('syncLastSyncInfoMenu'),
+        filterToggleBtn: document.getElementById('filterToggleBtn'),
+        filterToggleLabel: document.getElementById('filterToggleLabel'),
+        filterAppliedBadge: document.getElementById('filterAppliedBadge'),
+        sidebarControls: document.getElementById('sidebarControls'),
         sortSelect: document.getElementById('sortSelect'),
         filterHealth: document.getElementById('filterHealth'),
         filterOwner: document.getElementById('filterOwner'),
@@ -1642,7 +1789,38 @@
       function markUnsynced(value = true) {
         state.sync.unsynced = value;
         el.syncUnsavedBadge.hidden = !value;
+        el.menuSyncDot.hidden = !value;
         refreshSyncStatus();
+      }
+
+      function getAppliedFilterCount() {
+        return [state.filters.overallHealth, state.filters.salesOwner, state.filters.forecastCategory]
+          .filter((value) => String(value || '').trim().length > 0).length;
+      }
+
+      function refreshFilterToggleUi() {
+        const activeCount = getAppliedFilterCount();
+        el.filterToggleLabel.textContent = state.ui.filtersOpen
+          ? 'Hide Filters'
+          : activeCount ? `Filters (${activeCount})` : 'Filters';
+        el.filterAppliedBadge.hidden = activeCount === 0;
+        el.filterAppliedBadge.textContent = activeCount ? `${activeCount} active` : 'Active';
+        el.filterToggleBtn.setAttribute('aria-expanded', state.ui.filtersOpen ? 'true' : 'false');
+        el.sidebarControls.hidden = !state.ui.filtersOpen;
+        const sidebar = el.sidebarControls.closest('.sidebar');
+        if (sidebar) {
+          sidebar.classList.toggle('filters-collapsed', !state.ui.filtersOpen);
+        }
+      }
+
+      function setMenuOpen(isOpen) {
+        state.ui.menuOpen = Boolean(isOpen);
+        el.actionsMenu.hidden = !state.ui.menuOpen;
+        el.menuBtn.setAttribute('aria-expanded', state.ui.menuOpen ? 'true' : 'false');
+      }
+
+      function closeActionsMenu() {
+        setMenuOpen(false);
       }
 
       function refreshGitHubConnectionUI() {
@@ -1657,6 +1835,7 @@
         el.syncConnectionInfo.textContent = connectedText;
         const lastSyncLabel = state.sync.lastSyncAt ? formatDateTime(state.sync.lastSyncAt) : 'Never';
         el.syncLastSyncInfo.textContent = `Last sync: ${lastSyncLabel}`;
+        el.syncLastSyncInfoMenu.textContent = `Last sync: ${lastSyncLabel}`;
       }
 
       function refreshSyncStatus() {
@@ -2408,6 +2587,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
 
       function renderSidebar() {
         refreshSidebarFilterOptions();
+        refreshFilterToggleUi();
         const maps = filteredMaps();
         el.mapList.innerHTML = '';
         maps.forEach((m) => {
@@ -3156,16 +3336,45 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         renderSidebar();
       });
 
+      el.filterToggleBtn.addEventListener('click', () => {
+        state.ui.filtersOpen = !state.ui.filtersOpen;
+        refreshFilterToggleUi();
+      });
+
       el.saveBtn.addEventListener('click', () => saveCurrent({}));
       el.newBtn.addEventListener('click', createNewMap);
-      el.duplicateBtn.addEventListener('click', duplicateCurrent);
-      el.deleteBtn.addEventListener('click', deleteCurrent);
-      el.exportCsvBtn.addEventListener('click', exportCurrentMapCsv);
-      el.exportJsonBtn.addEventListener('click', exportJsonBackup);
-      el.importJsonBtn.addEventListener('click', () => el.importJsonInput.click());
+      el.menuBtn.addEventListener('click', () => {
+        setMenuOpen(!state.ui.menuOpen);
+      });
+      el.duplicateBtn.addEventListener('click', () => {
+        closeActionsMenu();
+        duplicateCurrent();
+      });
+      el.deleteBtn.addEventListener('click', () => {
+        closeActionsMenu();
+        deleteCurrent();
+      });
+      el.exportCsvBtn.addEventListener('click', () => {
+        closeActionsMenu();
+        exportCurrentMapCsv();
+      });
+      el.exportJsonBtn.addEventListener('click', () => {
+        closeActionsMenu();
+        exportJsonBackup();
+      });
+      el.importJsonBtn.addEventListener('click', () => {
+        closeActionsMenu();
+        el.importJsonInput.click();
+      });
       el.importJsonInput.addEventListener('change', (e) => importJsonBackup(e.target.files && e.target.files[0]));
-      el.exportPdfBtn.addEventListener('click', exportCurrentMapPdf);
-      el.syncSettingsBtn.addEventListener('click', openSyncModal);
+      el.exportPdfBtn.addEventListener('click', () => {
+        closeActionsMenu();
+        exportCurrentMapPdf();
+      });
+      el.syncSettingsBtn.addEventListener('click', () => {
+        closeActionsMenu();
+        openSyncModal();
+      });
       el.closeSyncModalBtn.addEventListener('click', closeSyncModal);
       el.syncModal.addEventListener('click', (e) => {
         if (e.target === el.syncModal) closeSyncModal();
@@ -3175,6 +3384,20 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
       el.loadGithubBtn.addEventListener('click', loadFromGithub);
       el.saveGithubBtn.addEventListener('click', saveToGithub);
       el.createGithubFileBtn.addEventListener('click', createGithubDataFile);
+
+      document.addEventListener('click', (e) => {
+        if (!state.ui.menuOpen) return;
+        const withinMenu = el.actionsMenu.contains(e.target);
+        const onMenuButton = el.menuBtn.contains(e.target);
+        if (!withinMenu && !onMenuButton) closeActionsMenu();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && state.ui.menuOpen) {
+          closeActionsMenu();
+          el.menuBtn.focus();
+        }
+      });
 
       init();
     })();
