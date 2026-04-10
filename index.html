@@ -6,21 +6,23 @@
   <title>MEDDPIC MAP Manager</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --panel-2: #1f2937;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --border: #374151;
-      --accent: #3b82f6;
-      --danger: #ef4444;
-      --ok: #10b981;
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --panel-2: #f9fbff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #dbe3ef;
+      --accent: #2563eb;
+      --danger: #dc2626;
+      --ok: #059669;
+      --warning: #d97706;
     }
 
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: Inter, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       height: 100vh;
@@ -32,7 +34,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 12px;
+      padding: 12px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
       flex-wrap: wrap;
@@ -46,20 +48,28 @@
     }
 
     button, input, select, textarea {
-      background: var(--panel-2);
+      background: var(--panel);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 8px 10px;
       font-size: 14px;
     }
 
+    input:focus, select:focus, textarea:focus, button:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.22);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+
     button {
       cursor: pointer;
+      background: #fff;
     }
 
     button:hover {
       border-color: var(--accent);
+      background: #eef4ff;
     }
 
     .search-input {
@@ -71,11 +81,22 @@
       margin-left: 10px;
       font-size: 12px;
       color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status.saved {
+      color: var(--ok);
+    }
+
+    .status.unsaved {
+      color: var(--warning);
     }
 
     .shell {
       display: grid;
-      grid-template-columns: 280px 1fr;
+      grid-template-columns: 320px 1fr;
       min-height: 0;
       flex: 1;
     }
@@ -84,40 +105,55 @@
       border-right: 1px solid var(--border);
       background: var(--panel);
       overflow: auto;
-      padding: 8px;
+      padding: 10px;
     }
 
     .sidebar h2 {
       font-size: 13px;
       text-transform: uppercase;
       color: var(--muted);
-      margin: 6px 8px 10px;
+      margin: 6px 2px 10px;
       letter-spacing: 0.8px;
+    }
+
+    .sidebar-controls {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .sidebar-controls label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: block;
     }
 
     .map-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
     .map-item {
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px;
-      background: #0b1220;
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--panel-2);
       cursor: pointer;
+      text-align: left;
+      width: 100%;
     }
 
     .map-item.active {
       border-color: var(--accent);
-      background: #0a1b3f;
+      background: #e9f0ff;
     }
 
     .map-item .title {
       font-weight: 600;
       font-size: 14px;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
 
     .map-item .meta {
@@ -139,7 +175,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      padding: 8px;
+      padding: 10px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
     }
@@ -151,13 +187,15 @@
 
     .tab-btn.active {
       border-color: var(--accent);
-      background: #0a1b3f;
+      background: #e9f0ff;
+      color: #1e3a8a;
+      font-weight: 600;
     }
 
     .tab-panel {
       display: none;
       overflow: auto;
-      padding: 14px;
+      padding: 16px;
       height: 100%;
     }
 
@@ -166,7 +204,7 @@
     .form-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 10px;
+      gap: 12px;
       align-items: start;
     }
 
@@ -187,21 +225,22 @@
     }
 
     textarea {
-      min-height: 100px;
+      min-height: 110px;
       resize: vertical;
     }
 
     .table-wrap {
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       overflow: auto;
-      background: #0b1220;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 700px;
+      min-width: 860px;
     }
 
     th, td {
@@ -212,32 +251,52 @@
     }
 
     th {
-      background: #121a2b;
+      background: #f3f7ff;
       font-size: 12px;
-      color: var(--muted);
+      color: #475569;
       position: sticky;
       top: 0;
+      z-index: 1;
     }
 
-    td input {
+    td input, td select {
       width: 100%;
       min-width: 120px;
       padding: 6px 8px;
+      background: #fff;
     }
 
     .table-actions {
-      margin-top: 8px;
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .add-row-btn {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1d4ed8;
+      font-weight: 600;
     }
 
     .remove-btn {
-      background: #2a1217;
-      border-color: #5b1f2a;
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
     }
 
     .unsaved-pill {
-      color: #fbbf24;
+      color: var(--warning);
       font-size: 12px;
-      margin-left: 6px;
+      margin-left: 4px;
+      font-weight: 600;
+    }
+
+    .saved-pill {
+      color: var(--ok);
+      font-size: 12px;
+      margin-left: 4px;
+      font-weight: 600;
     }
   </style>
 </head>
@@ -249,13 +308,41 @@
     <button id="duplicateBtn" type="button">Duplicate</button>
     <button id="deleteBtn" type="button">Delete</button>
     <input id="searchInput" class="search-input" type="search" placeholder="Search MAPs" />
-    <span id="cacheStatus" class="status">Local Cache</span>
+    <span id="cacheStatus" class="status saved">● Saved</span>
     <span id="unsavedIndicator" class="unsaved-pill" hidden>Unsaved changes</span>
   </header>
 
   <div class="shell">
     <aside class="sidebar">
       <h2>Saved MAPs</h2>
+      <div class="sidebar-controls">
+        <div>
+          <label for="sortSelect">Sort by</label>
+          <select id="sortSelect">
+            <option value="updatedAt">Last Updated</option>
+            <option value="accountName">Account</option>
+            <option value="opportunityName">Opportunity</option>
+          </select>
+        </div>
+        <div>
+          <label for="filterHealth">Filter: Overall Health</label>
+          <select id="filterHealth">
+            <option value="">All</option>
+          </select>
+        </div>
+        <div>
+          <label for="filterOwner">Filter: Sales Owner</label>
+          <select id="filterOwner">
+            <option value="">All</option>
+          </select>
+        </div>
+        <div>
+          <label for="filterForecast">Filter: Forecast Category</label>
+          <select id="filterForecast">
+            <option value="">All</option>
+          </select>
+        </div>
+      </div>
       <div id="mapList" class="map-list"></div>
     </aside>
 
@@ -270,6 +357,13 @@
       const DB_NAME = 'meddpic-map-manager';
       const DB_VERSION = 1;
       const STORE_NAME = 'maps';
+      const AUTOSAVE_DELAY_MS = 700;
+
+      const FORECAST_OPTIONS = ['Pipeline', 'Best Case', 'Commit', 'Closed Won', 'Closed Lost'];
+      const STRENGTH_OPTIONS = ['Red', 'Amber', 'Green'];
+      const STATUS_OPTIONS = ['Not Started', 'In Progress', 'Blocked', 'Complete'];
+      const INFLUENCE_OPTIONS = ['High', 'Medium', 'Low'];
+      const ATTITUDE_OPTIONS = ['Supporter', 'Neutral', 'Skeptic', 'Blocker'];
 
       const TABS = [
         'Summary',
@@ -282,6 +376,16 @@
         'Action Plan'
       ];
 
+      const TAB_TO_KEY = {
+        'MEDDPIC Scorecard': 'meddpicScorecard',
+        'Metrics': 'metrics',
+        'Stakeholders': 'stakeholders',
+        'Decision Process': 'decisionProcess',
+        'Paper Process': 'paperProcess',
+        'Competition': 'competition',
+        'Action Plan': 'actionPlan'
+      };
+
       const TABLE_SCHEMAS = {
         meddpicScorecard: ['Element', 'Status', 'Evidence', 'Owner', 'Notes'],
         metrics: ['Metric', 'Current', 'Target', 'Impact', 'Notes'],
@@ -292,14 +396,30 @@
         actionPlan: ['Action', 'Owner', 'Due Date', 'Status', 'Notes']
       };
 
+      const TABLE_DROPDOWNS = {
+        meddpicScorecard: { 1: STATUS_OPTIONS },
+        stakeholders: { 2: INFLUENCE_OPTIONS, 3: ATTITUDE_OPTIONS },
+        decisionProcess: { 3: STATUS_OPTIONS },
+        competition: { 1: STRENGTH_OPTIONS, 3: STATUS_OPTIONS },
+        actionPlan: { 3: STATUS_OPTIONS }
+      };
+
       const state = {
         maps: [],
         currentMapId: null,
         currentMap: null,
         activeTab: 'Summary',
         dirty: false,
-        search: ''
+        search: '',
+        sortBy: 'updatedAt',
+        filters: {
+          overallHealth: '',
+          salesOwner: '',
+          forecastCategory: ''
+        }
       };
+
+      let autosaveTimer = null;
 
       const el = {
         mapList: document.getElementById('mapList'),
@@ -310,7 +430,12 @@
         newBtn: document.getElementById('newBtn'),
         duplicateBtn: document.getElementById('duplicateBtn'),
         deleteBtn: document.getElementById('deleteBtn'),
-        unsavedIndicator: document.getElementById('unsavedIndicator')
+        unsavedIndicator: document.getElementById('unsavedIndicator'),
+        cacheStatus: document.getElementById('cacheStatus'),
+        sortSelect: document.getElementById('sortSelect'),
+        filterHealth: document.getElementById('filterHealth'),
+        filterOwner: document.getElementById('filterOwner'),
+        filterForecast: document.getElementById('filterForecast')
       };
 
       function uid() {
@@ -357,15 +482,15 @@
         sample.salesOwner = 'Jordan Lee';
         sample.economicBuyer = 'Rita Shah';
         sample.champion = 'Darren Wong';
-        sample.overallHealth = 'Yellow';
+        sample.overallHealth = 'Amber';
         sample.notes = 'Pilot finished. Procurement review starts next week.';
         sample.meddpicScorecard.push(['Metrics', 'In Progress', 'Baseline validated', 'Jordan Lee', 'Need executive sign-off']);
         sample.metrics.push(['Cycle time reduction', '18%', '30%', 'Operational efficiency', 'Need final benchmark']);
-        sample.stakeholders.push(['Rita Shah', 'CFO', 'High', 'Supportive', 'Focused on ROI']);
-        sample.decisionProcess.push(['Security review', 'IT Security', '2026-05-10', 'Pending', 'Questionnaire sent']);
+        sample.stakeholders.push(['Rita Shah', 'CFO', 'High', 'Supporter', 'Focused on ROI']);
+        sample.decisionProcess.push(['Security review', 'IT Security', '2026-05-10', 'Not Started', 'Questionnaire sent']);
         sample.paperProcess.push(['MSA redlines', 'Legal', 'Drafting', '2026-05-22', 'Customer requested new clause']);
-        sample.competition.push(['Contoso Suite', 'Incumbent relationship', 'Limited automation', 'Active', 'Competing at lower price']);
-        sample.actionPlan.push(['Schedule EB value recap', 'Jordan Lee', '2026-04-21', 'Open', 'Include champion in prep']);
+        sample.competition.push(['Contoso Suite', 'Amber', 'Limited automation', 'In Progress', 'Competing at lower price']);
+        sample.actionPlan.push(['Schedule EB value recap', 'Jordan Lee', '2026-04-21', 'Not Started', 'Include champion in prep']);
         return sample;
       }
 
@@ -414,11 +539,11 @@
         });
       }
 
-      function validateRequired(mapObj) {
+      function validateRequired(mapObj, silent = false) {
         const required = ['opportunityName', 'accountName', 'salesOwner'];
         const missing = required.filter((key) => !String(mapObj[key] || '').trim());
         if (missing.length) {
-          alert('Required fields missing: ' + missing.join(', '));
+          if (!silent) alert('Required fields missing: ' + missing.join(', '));
           return false;
         }
         return true;
@@ -427,19 +552,38 @@
       function markDirty(dirty = true) {
         state.dirty = dirty;
         el.unsavedIndicator.hidden = !dirty;
+        if (dirty) {
+          el.cacheStatus.textContent = '● Unsaved changes';
+          el.cacheStatus.className = 'status unsaved';
+        } else {
+          el.cacheStatus.textContent = '● Saved';
+          el.cacheStatus.className = 'status saved';
+        }
       }
 
-      function sortMaps(list) {
-        return [...list].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      function sortedMaps(list) {
+        const toText = (v) => String(v || '').toLowerCase();
+        return [...list].sort((a, b) => {
+          if (state.sortBy === 'updatedAt') return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+          return toText(a[state.sortBy]).localeCompare(toText(b[state.sortBy]));
+        });
       }
 
       function filteredMaps() {
         const q = state.search.trim().toLowerCase();
-        if (!q) return state.maps;
-        return state.maps.filter((m) => {
-          return [m.opportunityName, m.accountName, m.salesOwner]
+        const maps = state.maps.filter((m) => {
+          const searchMatch = !q || [m.opportunityName, m.accountName, m.salesOwner, m.champion]
             .some((v) => String(v || '').toLowerCase().includes(q));
+          const healthMatch = !state.filters.overallHealth || m.overallHealth === state.filters.overallHealth;
+          const ownerMatch = !state.filters.salesOwner || m.salesOwner === state.filters.salesOwner;
+          const forecastMatch = !state.filters.forecastCategory || m.forecastCategory === state.filters.forecastCategory;
+          return searchMatch && healthMatch && ownerMatch && forecastMatch;
         });
+        return sortedMaps(maps);
+      }
+
+      function getCurrentStoredMap() {
+        return state.maps.find((m) => m.id === state.currentMapId) || null;
       }
 
       function setCurrentMap(id) {
@@ -451,36 +595,87 @@
         renderAll();
       }
 
+      function scheduleAutosave() {
+        if (!state.currentMap) return;
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(async () => {
+          await saveCurrent({ silentValidation: true, isAutosave: true });
+        }, AUTOSAVE_DELAY_MS);
+      }
+
       function updateCurrentField(key, value) {
         if (!state.currentMap) return;
         state.currentMap[key] = value;
         markDirty(true);
+        scheduleAutosave();
+        renderSidebar();
+      }
+
+      function normalizeRow(arrayKey, rowIndex) {
+        const colCount = TABLE_SCHEMAS[arrayKey].length;
+        if (!Array.isArray(state.currentMap[arrayKey])) state.currentMap[arrayKey] = [];
+        if (!Array.isArray(state.currentMap[arrayKey][rowIndex])) {
+          state.currentMap[arrayKey][rowIndex] = Array(colCount).fill('');
+        }
+        for (let i = 0; i < colCount; i += 1) {
+          if (typeof state.currentMap[arrayKey][rowIndex][i] === 'undefined' || state.currentMap[arrayKey][rowIndex][i] === null) {
+            state.currentMap[arrayKey][rowIndex][i] = '';
+          }
+        }
       }
 
       function updateTableCell(arrayKey, rowIndex, colIndex, value) {
         if (!state.currentMap) return;
-        const rows = state.currentMap[arrayKey];
-        if (!rows[rowIndex]) return;
-        rows[rowIndex][colIndex] = value;
+        normalizeRow(arrayKey, rowIndex);
+        state.currentMap[arrayKey][rowIndex][colIndex] = value;
         markDirty(true);
+        scheduleAutosave();
       }
 
-      function addTableRow(arrayKey) {
+      function addTableRow(arrayKey, focusIndex = null) {
         if (!state.currentMap) return;
         const colCount = TABLE_SCHEMAS[arrayKey].length;
+        if (!Array.isArray(state.currentMap[arrayKey])) state.currentMap[arrayKey] = [];
         state.currentMap[arrayKey].push(Array(colCount).fill(''));
         markDirty(true);
+        scheduleAutosave();
         renderPanels();
+        if (focusIndex !== null) {
+          const sel = `[data-cell="${arrayKey}-${focusIndex}-0"]`;
+          const firstCell = el.panels.querySelector(sel);
+          if (firstCell) firstCell.focus();
+        }
       }
 
       function removeTableRow(arrayKey, index) {
-        if (!state.currentMap) return;
+        if (!state.currentMap || !Array.isArray(state.currentMap[arrayKey])) return;
         state.currentMap[arrayKey].splice(index, 1);
         markDirty(true);
+        scheduleAutosave();
         renderPanels();
       }
 
+      function fillSelectWithUniqueValues(selectEl, values, currentValue = '') {
+        const options = ['<option value="">All</option>'];
+        values.forEach((val) => {
+          options.push(`<option value="${escapeHtml(val)}">${escapeHtml(val)}</option>`);
+        });
+        selectEl.innerHTML = options.join('');
+        selectEl.value = currentValue;
+      }
+
+      function refreshSidebarFilterOptions() {
+        const uniqueHealth = [...new Set(state.maps.map((m) => (m.overallHealth || '').trim()).filter(Boolean))].sort();
+        const uniqueOwners = [...new Set(state.maps.map((m) => (m.salesOwner || '').trim()).filter(Boolean))].sort();
+        const uniqueForecast = [...new Set(state.maps.map((m) => (m.forecastCategory || '').trim()).filter(Boolean))].sort();
+
+        fillSelectWithUniqueValues(el.filterHealth, uniqueHealth, state.filters.overallHealth);
+        fillSelectWithUniqueValues(el.filterOwner, uniqueOwners, state.filters.salesOwner);
+        fillSelectWithUniqueValues(el.filterForecast, uniqueForecast, state.filters.forecastCategory);
+      }
+
       function renderSidebar() {
+        refreshSidebarFilterOptions();
         const maps = filteredMaps();
         el.mapList.innerHTML = '';
         maps.forEach((m) => {
@@ -490,10 +685,18 @@
           item.innerHTML = `
             <div class="title">${escapeHtml(m.opportunityName || '(Untitled Opportunity)')}</div>
             <div class="meta">${escapeHtml(m.accountName || '(No Account)')} • ${escapeHtml(m.salesOwner || '(No Owner)')}</div>
+            <div class="meta">Champion: ${escapeHtml(m.champion || '-')} • Updated: ${escapeHtml(formatDateTime(m.updatedAt))}</div>
           `;
           item.addEventListener('click', () => setCurrentMap(m.id));
           el.mapList.appendChild(item);
         });
+      }
+
+      function formatDateTime(iso) {
+        if (!iso) return '-';
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return '-';
+        return d.toLocaleString();
       }
 
       function renderTabs() {
@@ -512,18 +715,33 @@
         });
       }
 
+      function createSelectControl(options, value, onChange) {
+        const select = document.createElement('select');
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = '-- Select --';
+        select.appendChild(blank);
+        options.forEach((opt) => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt;
+          select.appendChild(option);
+        });
+        select.value = value || '';
+        select.addEventListener('change', (e) => onChange(e.target.value));
+        return select;
+      }
+
       function renderSummaryPanel(panel) {
         if (!state.currentMap) return;
         const fields = [
           ['opportunityName', 'Opportunity Name', 'text', true],
           ['accountName', 'Account Name', 'text', true],
           ['dealValue', 'Deal Value', 'number', false],
-          ['forecastCategory', 'Forecast Category', 'text', false],
           ['closeDate', 'Close Date', 'date', false],
           ['salesOwner', 'Sales Owner', 'text', true],
           ['economicBuyer', 'Economic Buyer', 'text', false],
-          ['champion', 'Champion', 'text', false],
-          ['overallHealth', 'Overall Health', 'text', false]
+          ['champion', 'Champion', 'text', false]
         ];
 
         const grid = document.createElement('div');
@@ -546,6 +764,18 @@
           grid.appendChild(wrap);
         });
 
+        const forecastWrap = document.createElement('div');
+        forecastWrap.className = 'form-field';
+        forecastWrap.innerHTML = '<label>Forecast Category</label>';
+        forecastWrap.appendChild(createSelectControl(FORECAST_OPTIONS, state.currentMap.forecastCategory, (value) => updateCurrentField('forecastCategory', value)));
+        grid.appendChild(forecastWrap);
+
+        const healthWrap = document.createElement('div');
+        healthWrap.className = 'form-field';
+        healthWrap.innerHTML = '<label>Overall Health</label>';
+        healthWrap.appendChild(createSelectControl(STRENGTH_OPTIONS, state.currentMap.overallHealth, (value) => updateCurrentField('overallHealth', value)));
+        grid.appendChild(healthWrap);
+
         const notesWrap = document.createElement('div');
         notesWrap.className = 'form-field';
         notesWrap.style.gridColumn = '1 / -1';
@@ -563,11 +793,69 @@
         panel.appendChild(grid);
       }
 
+      function createCellEditor(arrayKey, rowIndex, colIndex, value) {
+        const options = TABLE_DROPDOWNS[arrayKey] && TABLE_DROPDOWNS[arrayKey][colIndex];
+        if (options) {
+          const select = createSelectControl(options, value, (newValue) => updateTableCell(arrayKey, rowIndex, colIndex, newValue));
+          select.dataset.cell = `${arrayKey}-${rowIndex}-${colIndex}`;
+          select.addEventListener('keydown', (e) => onCellKeydown(e, arrayKey, rowIndex, colIndex));
+          return select;
+        }
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = value || '';
+        input.dataset.cell = `${arrayKey}-${rowIndex}-${colIndex}`;
+        input.addEventListener('input', (e) => updateTableCell(arrayKey, rowIndex, colIndex, e.target.value));
+        input.addEventListener('keydown', (e) => onCellKeydown(e, arrayKey, rowIndex, colIndex));
+        return input;
+      }
+
+      function onCellKeydown(e, arrayKey, rowIndex, colIndex) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const headers = TABLE_SCHEMAS[arrayKey];
+        const isLastCol = colIndex === headers.length - 1;
+        const rows = state.currentMap[arrayKey] || [];
+        const isLastRow = rowIndex === rows.length - 1;
+
+        if (isLastCol && isLastRow) {
+          addTableRow(arrayKey, rowIndex + 1);
+          return;
+        }
+
+        const nextCol = isLastCol ? 0 : colIndex + 1;
+        const nextRow = isLastCol ? rowIndex + 1 : rowIndex;
+        const next = el.panels.querySelector(`[data-cell="${arrayKey}-${nextRow}-${nextCol}"]`);
+        if (next) next.focus();
+      }
+
+      function renderTableRow(arrayKey, headers, row, rowIndex, tbody) {
+        const tr = document.createElement('tr');
+        headers.forEach((_, colIndex) => {
+          const td = document.createElement('td');
+          const value = Array.isArray(row) ? row[colIndex] : '';
+          td.appendChild(createCellEditor(arrayKey, rowIndex, colIndex, value));
+          tr.appendChild(td);
+        });
+
+        const tdAction = document.createElement('td');
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button';
+        rmBtn.className = 'remove-btn';
+        rmBtn.textContent = 'Delete Row';
+        rmBtn.addEventListener('click', () => removeTableRow(arrayKey, rowIndex));
+        tdAction.appendChild(rmBtn);
+        tr.appendChild(tdAction);
+        tbody.appendChild(tr);
+      }
+
       function renderTablePanel(panel, arrayKey) {
         if (!state.currentMap) return;
 
         const headers = TABLE_SCHEMAS[arrayKey];
-        const rows = state.currentMap[arrayKey] || [];
+        if (!Array.isArray(state.currentMap[arrayKey])) state.currentMap[arrayKey] = [];
+        const rows = state.currentMap[arrayKey];
 
         const wrap = document.createElement('div');
         wrap.className = 'table-wrap';
@@ -587,26 +875,8 @@
 
         const tbody = document.createElement('tbody');
         rows.forEach((row, rowIndex) => {
-          const tr = document.createElement('tr');
-          headers.forEach((_, colIndex) => {
-            const td = document.createElement('td');
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = row[colIndex] || '';
-            input.addEventListener('input', (e) => updateTableCell(arrayKey, rowIndex, colIndex, e.target.value));
-            td.appendChild(input);
-            tr.appendChild(td);
-          });
-
-          const tdAction = document.createElement('td');
-          const rmBtn = document.createElement('button');
-          rmBtn.type = 'button';
-          rmBtn.className = 'remove-btn';
-          rmBtn.textContent = 'Remove';
-          rmBtn.addEventListener('click', () => removeTableRow(arrayKey, rowIndex));
-          tdAction.appendChild(rmBtn);
-          tr.appendChild(tdAction);
-          tbody.appendChild(tr);
+          normalizeRow(arrayKey, rowIndex);
+          renderTableRow(arrayKey, headers, row, rowIndex, tbody);
         });
 
         table.append(thead, tbody);
@@ -617,8 +887,9 @@
         actions.className = 'table-actions';
         const addBtn = document.createElement('button');
         addBtn.type = 'button';
+        addBtn.className = 'add-row-btn';
         addBtn.textContent = 'Add Row';
-        addBtn.addEventListener('click', () => addTableRow(arrayKey));
+        addBtn.addEventListener('click', () => addTableRow(arrayKey, rows.length));
         actions.appendChild(addBtn);
         panel.appendChild(actions);
       }
@@ -639,16 +910,7 @@
           if (tab === 'Summary') {
             renderSummaryPanel(panel);
           } else {
-            const keyMap = {
-              'MEDDPIC Scorecard': 'meddpicScorecard',
-              'Metrics': 'metrics',
-              'Stakeholders': 'stakeholders',
-              'Decision Process': 'decisionProcess',
-              'Paper Process': 'paperProcess',
-              'Competition': 'competition',
-              'Action Plan': 'actionPlan'
-            };
-            renderTablePanel(panel, keyMap[tab]);
+            renderTablePanel(panel, TAB_TO_KEY[tab]);
           }
 
           el.panels.appendChild(panel);
@@ -661,9 +923,10 @@
         renderPanels();
       }
 
-      async function saveCurrent() {
+      async function saveCurrent({ silentValidation = false, isAutosave = false } = {}) {
         if (!state.currentMap) return;
-        if (!validateRequired(state.currentMap)) return;
+        const valid = validateRequired(state.currentMap, silentValidation);
+        if (!valid) return;
 
         const toSave = JSON.parse(JSON.stringify(state.currentMap));
         if (!toSave.createdAt) toSave.createdAt = nowIso();
@@ -677,18 +940,23 @@
         } else {
           state.maps.push(toSave);
         }
-        state.maps = sortMaps(state.maps);
+        state.maps = sortedMaps(state.maps);
         state.currentMap = JSON.parse(JSON.stringify(toSave));
         state.currentMapId = toSave.id;
         markDirty(false);
-        renderAll();
+
+        if (!isAutosave) {
+          renderAll();
+        } else {
+          renderSidebar();
+        }
       }
 
       async function createNewMap() {
         const mapObj = createEmptyMap();
         state.currentMap = mapObj;
         state.currentMapId = mapObj.id;
-        state.maps = sortMaps([...state.maps, mapObj]);
+        state.maps = sortedMaps([...state.maps, mapObj]);
         markDirty(true);
         renderAll();
       }
@@ -702,7 +970,7 @@
         cloned.updatedAt = timestamp;
         cloned.opportunityName = (cloned.opportunityName || 'Untitled') + ' Copy';
         await idbPut(cloned);
-        state.maps = sortMaps([...state.maps, cloned]);
+        state.maps = sortedMaps([...state.maps, cloned]);
         setCurrentMap(cloned.id);
       }
 
@@ -737,7 +1005,7 @@
             maps = [sample];
           }
 
-          state.maps = sortMaps(maps);
+          state.maps = sortedMaps(maps);
           state.currentMapId = state.maps[0]?.id || null;
           state.currentMap = state.maps[0] ? JSON.parse(JSON.stringify(state.maps[0])) : null;
           renderAll();
@@ -752,7 +1020,27 @@
         renderSidebar();
       });
 
-      el.saveBtn.addEventListener('click', saveCurrent);
+      el.sortSelect.addEventListener('change', (e) => {
+        state.sortBy = e.target.value;
+        renderSidebar();
+      });
+
+      el.filterHealth.addEventListener('change', (e) => {
+        state.filters.overallHealth = e.target.value;
+        renderSidebar();
+      });
+
+      el.filterOwner.addEventListener('change', (e) => {
+        state.filters.salesOwner = e.target.value;
+        renderSidebar();
+      });
+
+      el.filterForecast.addEventListener('change', (e) => {
+        state.filters.forecastCategory = e.target.value;
+        renderSidebar();
+      });
+
+      el.saveBtn.addEventListener('click', () => saveCurrent({}));
       el.newBtn.addEventListener('click', createNewMap);
       el.duplicateBtn.addEventListener('click', duplicateCurrent);
       el.deleteBtn.addEventListener('click', deleteCurrent);
