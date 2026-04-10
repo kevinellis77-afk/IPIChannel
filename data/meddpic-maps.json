@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-10T10:25:46.721Z",
+  "updatedAt": "2026-04-10T10:27:11.689Z",
   "maps": [
     {
       "id": "5077625b-7c6a-4888-9cc9-10146d7456d6",
@@ -20,6 +20,7 @@
         [
           "Metrics",
           "In Progress",
+          "",
           "Baseline validated",
           "Jordan Lee",
           "Need executive sign-off"
@@ -31,6 +32,7 @@
           "18%",
           "30%",
           "Operational efficiency",
+          "",
           "Need final benchmark"
         ]
       ],
@@ -76,6 +78,7 @@
           "Jordan Lee",
           "2026-04-21",
           "Open",
+          "",
           "Include champion in prep"
         ]
       ]
@@ -98,6 +101,7 @@
         [
           "Metrics",
           "In Progress",
+          "",
           "Baseline validated",
           "Jordan Lee",
           "Need executive sign-off"
@@ -109,6 +113,7 @@
           "18%",
           "30%",
           "Operational efficiency",
+          "",
           "Need final benchmark"
         ]
       ],
@@ -154,6 +159,7 @@
           "Jordan Lee",
           "2026-04-21",
           "Open",
+          "",
           "Include champion in prep"
         ]
       ]
