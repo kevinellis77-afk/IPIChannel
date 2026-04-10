@@ -779,6 +779,7 @@
 
       const LOCAL_DATA_UPDATED_AT_KEY = 'meddpic_local_data_updated_at_v1';
       const LAST_SYNC_AT_KEY = 'meddpic_github_last_sync_at_v1';
+      const GITHUB_CONFIG_KEY = 'meddpic_github_config_v1';
 
       let autosaveTimer = null;
 
@@ -1197,13 +1198,84 @@
         el.syncErrorBox.textContent = `Sync error: ${message}`;
       }
 
+      function maskToken(token = '') {
+        const value = String(token || '').trim();
+        if (!value) return '(empty)';
+        if (value.length <= 8) return '****';
+        return `${value.slice(0, 4)}...${value.slice(-4)}`;
+      }
+
+      function sanitizeGitHubConfig(config = {}) {
+        return {
+          token: String(config.token || '').trim(),
+          owner: String(config.owner || '').trim(),
+          repo: String(config.repo || '').trim(),
+          branch: String(config.branch || '').trim(),
+          path: String(config.path || '').trim(),
+          connected: Boolean(config.connected),
+          connectedAt: config.connectedAt || null
+        };
+      }
+
+      function isGitHubConnectedConfig(config) {
+        if (!config) return false;
+        return Boolean(config.connected && config.token && config.owner && config.repo && config.branch && config.path);
+      }
+
+      function validateGitHubConfig(config) {
+        const cfg = sanitizeGitHubConfig(config);
+        const missing = [];
+        if (!cfg.token) missing.push('token');
+        if (!cfg.owner) missing.push('repo owner');
+        if (!cfg.repo) missing.push('repo name');
+        if (!cfg.branch) missing.push('branch');
+        if (!cfg.path) missing.push('JSON file path');
+        if (missing.length) {
+          const err = new Error(`Please enter all required GitHub fields: ${missing.join(', ')}.`);
+          err.code = 'MISSING_FIELDS';
+          throw err;
+        }
+        return cfg;
+      }
+
+      function getGitHubHeaders(token) {
+        return {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${String(token || '').trim()}`,
+          'X-GitHub-Api-Version': '2022-11-28'
+        };
+      }
+
+      async function saveGitHubConfig(config) {
+        const cfg = sanitizeGitHubConfig(config);
+        localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(cfg));
+        return cfg;
+      }
+
+      function loadGitHubConfig() {
+        const raw = localStorage.getItem(GITHUB_CONFIG_KEY);
+        if (!raw) return null;
+        try {
+          return sanitizeGitHubConfig(JSON.parse(raw));
+        } catch (_err) {
+          return null;
+        }
+      }
+
+      async function clearGitHubConfig() {
+        localStorage.removeItem(GITHUB_CONFIG_KEY);
+      }
+
       function markUnsynced(value = true) {
         state.sync.unsynced = value;
         el.syncUnsavedBadge.hidden = !value;
         refreshSyncStatus();
       }
 
-      function refreshSyncStatus() {
+      function refreshGitHubConnectionUI() {
+        const persistedConfig = loadGitHubConfig();
+        state.sync.config = persistedConfig;
+        state.sync.connected = isGitHubConnectedConfig(persistedConfig);
         const cfg = state.sync.config;
         const connectedText = state.sync.connected && cfg
           ? `GitHub: Connected (${cfg.owner}/${cfg.repo}@${cfg.branch})`
@@ -1212,6 +1284,10 @@
         el.syncConnectionInfo.textContent = connectedText;
         const lastSyncLabel = state.sync.lastSyncAt ? formatDateTime(state.sync.lastSyncAt) : 'Never';
         el.syncLastSyncInfo.textContent = `Last sync: ${lastSyncLabel}`;
+      }
+
+      function refreshSyncStatus() {
+        refreshGitHubConnectionUI();
       }
 
       function openSyncModal() {
@@ -1228,40 +1304,104 @@
       function promptForGithubConfig(existing = null) {
         // Security note: this token is only captured at runtime and is never hardcoded in source.
         const token = prompt('GitHub token (runtime only):', existing?.token || '');
-        if (!token) return null;
+        if (token === null) return null;
         const owner = prompt('GitHub repo owner:', existing?.owner || '');
-        if (!owner) return null;
+        if (owner === null) return null;
         const repo = prompt('GitHub repo name:', existing?.repo || '');
-        if (!repo) return null;
+        if (repo === null) return null;
         const branch = prompt('GitHub branch:', existing?.branch || 'main');
-        if (!branch) return null;
+        if (branch === null) return null;
         const path = prompt('JSON file path in repo:', existing?.path || 'data/meddpic-maps.json');
-        if (!path) return null;
-        return { token: token.trim(), owner: owner.trim(), repo: repo.trim(), branch: branch.trim(), path: path.trim() };
+        if (path === null) return null;
+        return {
+          token: token.trim(),
+          owner: owner.trim(),
+          repo: repo.trim(),
+          branch: branch.trim(),
+          path: path.trim()
+        };
       }
 
-      function connectGithub() {
-        const config = promptForGithubConfig(state.sync.config);
-        if (!config) {
-          showActionMessage('GitHub connection cancelled.', 'error');
-          return;
+      async function connectGithub() {
+        console.log('[GitHub] connectGitHub started');
+        try {
+          const configInput = promptForGithubConfig(state.sync.config || loadGitHubConfig());
+          if (!configInput) {
+            showActionMessage('GitHub connection cancelled.', 'error');
+            return;
+          }
+          const config = validateGitHubConfig(configInput);
+          console.log('[GitHub] collected config', {
+            owner: config.owner,
+            repo: config.repo,
+            branch: config.branch,
+            path: config.path,
+            token: maskToken(config.token)
+          });
+          const repoUrl = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
+          console.log('[GitHub] validation request started', repoUrl);
+          const repoResponse = await fetch(repoUrl, {
+            method: 'GET',
+            headers: getGitHubHeaders(config.token)
+          });
+          console.log('[GitHub] validation response status', repoResponse.status);
+          if (repoResponse.status === 401 || repoResponse.status === 403) {
+            throw new Error('Token invalid or missing required repository permissions (401/403).');
+          }
+          if (repoResponse.status === 404) {
+            throw new Error('Repository not found or inaccessible (404). Check owner/repo and token access.');
+          }
+          if (repoResponse.status !== 200) {
+            throw new Error(`GitHub validation failed with status ${repoResponse.status}.`);
+          }
+
+          let infoMessage = 'GitHub connected successfully.';
+          const fileEndpoint = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(config.branch)}`;
+          const fileResponse = await fetch(fileEndpoint, {
+            method: 'GET',
+            headers: getGitHubHeaders(config.token)
+          });
+          if (fileResponse.status === 404) {
+            infoMessage = 'Connected to repo, but JSON file not found yet. Use "Create GitHub data file".';
+          }
+
+          const persistedConfig = {
+            ...config,
+            connected: true,
+            connectedAt: nowIso()
+          };
+          await saveGitHubConfig(persistedConfig);
+          console.log('[GitHub] config persisted', {
+            owner: persistedConfig.owner,
+            repo: persistedConfig.repo,
+            branch: persistedConfig.branch,
+            path: persistedConfig.path,
+            token: maskToken(persistedConfig.token)
+          });
+          setSyncError('');
+          refreshGitHubConnectionUI();
+          console.log('[GitHub] UI state refreshed');
+          showActionMessage(infoMessage);
+          closeSyncModal();
+        } catch (err) {
+          console.error('[GitHub] connectGitHub failed with error', err);
+          setSyncError(err.message || 'Failed to connect GitHub.');
+          refreshGitHubConnectionUI();
+          showActionMessage(err.message || 'GitHub connection failed.', 'error');
         }
-        state.sync.connected = true;
-        state.sync.config = config;
-        setSyncError('');
-        refreshSyncStatus();
-        showActionMessage('GitHub connected for sync operations.');
       }
 
-      function disconnectGithub() {
+      async function disconnectGithub() {
+        await clearGitHubConfig();
         state.sync.connected = false;
         state.sync.config = null;
         setSyncError('');
-        refreshSyncStatus();
+        refreshGitHubConnectionUI();
         showActionMessage('GitHub disconnected.');
       }
 
       function ensureGithubConnected() {
+        refreshGitHubConnectionUI();
         if (state.sync.connected && state.sync.config) return true;
         showActionMessage('Connect GitHub first from Sync / Storage settings.', 'error');
         return false;
@@ -1270,11 +1410,7 @@
       async function githubRequest(method, endpoint, body = null) {
         const cfg = state.sync.config;
         const url = `https://api.github.com${endpoint}`;
-        const headers = {
-          'Accept': 'application/vnd.github+json',
-          'Authorization': `Bearer ${cfg.token}`,
-          'X-GitHub-Api-Version': '2022-11-28'
-        };
+        const headers = getGitHubHeaders(cfg.token);
         if (body) headers['Content-Type'] = 'application/json';
         const response = await fetch(url, {
           method,
@@ -2303,10 +2439,13 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           state.maps = sortedMaps(maps);
           state.currentMapId = state.maps[0]?.id || null;
           state.currentMap = state.maps[0] ? JSON.parse(JSON.stringify(state.maps[0])) : null;
+          const savedGithubConfig = loadGitHubConfig();
+          state.sync.config = savedGithubConfig;
+          state.sync.connected = isGitHubConnectedConfig(savedGithubConfig);
           state.sync.lastSyncAt = localStorage.getItem(LAST_SYNC_AT_KEY);
           const localUpdated = getLocalDataUpdatedAt();
           markUnsynced(Boolean(localUpdated && (!state.sync.lastSyncAt || new Date(localUpdated) > new Date(state.sync.lastSyncAt))));
-          refreshSyncStatus();
+          refreshGitHubConnectionUI();
           renderAll();
         } catch (err) {
           console.error(err);
