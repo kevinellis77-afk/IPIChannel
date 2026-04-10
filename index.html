@@ -159,6 +159,7 @@
 
     .map-item {
       border: 1px solid var(--border);
+      border-left: 5px solid #cbd5e1;
       border-radius: 10px;
       padding: 10px;
       background: var(--panel-2);
@@ -190,6 +191,27 @@
       display: grid;
       gap: 4px;
       margin-top: 6px;
+    }
+
+    .map-item.health-green-accent { border-left-color: #10b981; }
+    .map-item.health-amber-accent { border-left-color: #f59e0b; }
+    .map-item.health-red-accent { border-left-color: #ef4444; }
+
+    .map-warning-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .map-warning-pill {
+      font-size: 10px;
+      border: 1px solid #fdba74;
+      background: #fff7ed;
+      color: #9a3412;
+      padding: 1px 6px;
+      border-radius: 999px;
+      max-width: 100%;
     }
 
     .health-chip {
@@ -254,12 +276,12 @@
       padding: 10px;
       margin-bottom: 12px;
       display: grid;
-      gap: 8px;
+      gap: 10px;
     }
 
     .inspection-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
       gap: 8px;
     }
 
@@ -269,17 +291,50 @@
       padding: 8px;
       background: var(--panel-2);
       font-size: 12px;
+      min-height: 72px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 4px;
     }
 
     .inspection-item strong {
       display: block;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
 
-    .chip-row {
+    .inspection-value {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .inspection-item.emphasis-health {
+      border-width: 2px;
+      background: #f8fafc;
+    }
+
+    .inspection-item.emphasis-score .inspection-value {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+
+    .inspection-item.emphasis-risk .inspection-value {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .inspection-item.health-green { border-color: #6ee7b7; background: #ecfdf5; }
+    .inspection-item.health-amber { border-color: #fcd34d; background: #fffbeb; }
+    .inspection-item.health-red { border-color: #fecaca; background: #fef2f2; }
+
+    .meddpic-chip-row {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
@@ -291,6 +346,22 @@
       padding: 3px 8px;
       border: 1px solid var(--border);
       background: #fff;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      max-width: 100%;
+    }
+
+    .status-chip .chip-name {
+      color: #334155;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .status-chip .chip-state {
+      text-transform: capitalize;
+      font-weight: 800;
+      letter-spacing: 0.2px;
     }
 
     .status-complete { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
@@ -311,11 +382,160 @@
       color: #1e3a8a;
     }
 
-    .next-actions button {
+    .next-actions-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .next-action-item {
       width: 100%;
       text-align: left;
-      margin-bottom: 6px;
+      margin: 0;
       background: #fff;
+      border-left-width: 4px;
+      border-left-style: solid;
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 8px;
+      align-items: start;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+
+    .next-action-item .rank {
+      font-weight: 800;
+      color: #475569;
+      margin-top: 1px;
+    }
+
+    .next-action-item.priority-high { border-left-color: #dc2626; background: #fff7f7; }
+    .next-action-item.priority-medium { border-left-color: #d97706; background: #fffaf2; }
+    .next-action-item.priority-low { border-left-color: #94a3b8; background: #f8fafc; }
+
+    .meddpic-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .meddpic-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px;
+      text-align: left;
+      display: grid;
+      gap: 6px;
+      cursor: pointer;
+      min-height: 92px;
+    }
+
+    .meddpic-card .name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .meddpic-card .support {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.3;
+    }
+
+    .meddpic-card .status-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .meddpic-card.status-complete { border-color: #6ee7b7; background: #ecfdf5; }
+    .meddpic-card.status-partial { border-color: #fcd34d; background: #fffbeb; }
+    .meddpic-card.status-missing { border-color: #fecaca; background: #fef2f2; }
+
+    .metrics-summary {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .metrics-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+    }
+
+    .metric-summary-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 8px;
+    }
+
+    .metric-summary-card strong {
+      display: block;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+
+    .metric-summary-card .value {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .metric-summary-card.total-impact {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+
+    .metric-summary-card.total-impact .value {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1d4ed8;
+    }
+
+    .metric-summary-card.low-validation {
+      border-color: #fecaca;
+      background: #fef2f2;
+    }
+
+    .metric-validation-badge,
+    .metric-delta-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .metric-validation-yes { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
+    .metric-validation-no { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .metric-validation-unknown { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
+
+    .metric-impact {
+      font-weight: 700;
+      font-size: 13px;
+      color: #1f2937;
+    }
+
+    .metric-impact.high { color: #065f46; }
+    .metric-impact.medium { color: #92400e; }
+    .metric-impact.low { color: #991b1b; }
+
+    tr.metric-row-incomplete {
+      background: #fffaf0;
     }
 
     .form-grid {
@@ -1188,6 +1408,89 @@
           .slice(0, 3)
           .map((element) => ({ element, text: actions[element] }));
         return ranked;
+      }
+
+      function parseNumericValue(value) {
+        if (value === null || value === undefined) return null;
+        const raw = String(value).trim();
+        if (!raw) return null;
+        const cleaned = raw.replace(/,/g, '').replace(/\$/g, '').replace(/k/ig, '000').replace(/m/ig, '000000');
+        const match = cleaned.match(/-?\d+(\.\d+)?/);
+        if (!match) return null;
+        const num = Number(match[0]);
+        return Number.isFinite(num) ? num : null;
+      }
+
+      function calculateMetricDelta(baseline, target) {
+        const baselineNum = parseNumericValue(baseline);
+        const targetNum = parseNumericValue(target);
+        if (baselineNum === null || targetNum === null || baselineNum === 0) return null;
+        const change = targetNum - baselineNum;
+        const pct = (change / Math.abs(baselineNum)) * 100;
+        return { change, pct };
+      }
+
+      function getMetricSummary(mapObj) {
+        const rows = getRows(mapObj, 'metrics');
+        let quantifiedTotal = 0;
+        let quantifiedCount = 0;
+        let validated = 0;
+        let deltaSum = 0;
+        let deltaCount = 0;
+        rows.forEach((row) => {
+          const impact = parseNumericValue(row?.[3]);
+          if (impact !== null) {
+            quantifiedTotal += impact;
+            quantifiedCount += 1;
+          }
+          const validatedRaw = String(row?.[4] || '').trim().toLowerCase();
+          if (validatedRaw === 'yes') validated += 1;
+
+          const delta = calculateMetricDelta(row?.[1], row?.[2]);
+          if (delta && Number.isFinite(delta.pct)) {
+            deltaSum += delta.pct;
+            deltaCount += 1;
+          }
+        });
+        return {
+          metricCount: rows.length,
+          validatedCount: validated,
+          validationRatioText: `${validated}/${rows.length || 0}`,
+          quantifiedTotal,
+          quantifiedCount,
+          averageImprovement: deltaCount ? (deltaSum / deltaCount) : null
+        };
+      }
+
+      function getMeddpicCardSummary(mapObj, element) {
+        if (!mapObj) return 'No evidence captured';
+        const row = findScorecardRow(mapObj, element);
+        const fallback = 'No evidence captured';
+        if (element === 'Metrics') {
+          const metric = getRows(mapObj, 'metrics').find((r) => hasValue(r?.[0]) || hasValue(r?.[3]) || hasValue(r?.[2]));
+          if (!metric) return fallback;
+          return [metric?.[0], metric?.[3], metric?.[2]].filter(hasValue).join(' • ').slice(0, 90) || fallback;
+        }
+        if (element === 'Economic Buyer') {
+          if (hasValue(mapObj.economicBuyer)) return `EB: ${String(mapObj.economicBuyer).trim()}`;
+        }
+        if (element === 'Champion') {
+          if (hasValue(mapObj.champion)) return `Champion: ${String(mapObj.champion).trim()}`;
+        }
+        if (element === 'Decision Process') {
+          const dp = getRows(mapObj, 'decisionProcess').find((r) => hasValue(r?.[0]) || hasValue(r?.[1]));
+          if (dp) return [dp?.[0], dp?.[1], dp?.[2]].filter(hasValue).join(' • ').slice(0, 90) || fallback;
+        }
+        if (element === 'Paper Process') {
+          const pp = getRows(mapObj, 'paperProcess').find((r) => hasValue(r?.[0]) || hasValue(r?.[1]));
+          if (pp) return [pp?.[0], pp?.[1], pp?.[2]].filter(hasValue).join(' • ').slice(0, 90) || fallback;
+        }
+        if (element === 'Competition') {
+          const comp = getRows(mapObj, 'competition').find((r) => hasValue(r?.[0]) || hasValue(r?.[2]));
+          if (comp) return [comp?.[0], comp?.[2], comp?.[4]].filter(hasValue).join(' • ').slice(0, 90) || fallback;
+        }
+        const summary = [row?.[2], row?.[3], row?.[5]].find(hasValue);
+        return summary ? String(summary).slice(0, 90) : fallback;
       }
 
       function validateForecastChange(mapObj, newForecastCategory) {
@@ -2092,16 +2395,16 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
             .map((k) => `Missing ${k === 'Decision Process' ? 'Decision Process' : k === 'Economic Buyer' ? 'EB' : k}`);
           const item = document.createElement('button');
           item.type = 'button';
-          item.className = 'map-item' + (m.id === state.currentMapId ? ' active' : '');
+          item.className = `map-item health-${health.healthLabel.toLowerCase()}-accent` + (m.id === state.currentMapId ? ' active' : '');
           const healthClass = `health-${health.healthLabel.toLowerCase()}`;
           item.innerHTML = `
             <div class="title">${escapeHtml(m.opportunityName || '(Untitled Opportunity)')}</div>
-            <div class="meta">${escapeHtml(m.accountName || '(No Account)')} • ${escapeHtml(m.forecastCategory || 'No Forecast')}</div>
+            <div class="meta">${escapeHtml(m.accountName || '(No Account)')}</div>
             <div class="meta-wrap">
-              <div class="meta">Owner: ${escapeHtml(m.salesOwner || '(No Owner)')} • Value: ${escapeHtml(m.dealValue || '-')}</div>
+              <div class="meta">Forecast: ${escapeHtml(m.forecastCategory || 'No Forecast')}</div>
               <div class="meta">Updated: ${escapeHtml(formatDateTime(m.updatedAt))}</div>
               <div><span class="health-chip ${healthClass}">${escapeHtml(health.healthLabel)} (${health.score})</span></div>
-              ${majorWarnings.length ? `<div class="warning-inline">${escapeHtml(majorWarnings.join(' • '))}</div>` : ''}
+              ${majorWarnings.length ? `<div class="map-warning-row">${majorWarnings.slice(0, 3).map((warn) => `<span class="map-warning-pill">${escapeHtml(warn)}</span>`).join('')}</div>` : ''}
             </div>
           `;
           item.addEventListener('click', () => setCurrentMap(m.id));
@@ -2164,40 +2467,126 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         renderAll();
       }
 
+      function renderMeddpicBoard(panel) {
+        const completeness = getMeddpicCompleteness(state.currentMap);
+        const board = document.createElement('section');
+        board.className = 'meddpic-board';
+        MEDDPIC_ELEMENTS.forEach((element) => {
+          const status = completeness[element] || 'missing';
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = `meddpic-card status-${status}`;
+          card.innerHTML = `
+            <div class="name">${escapeHtml(element)}</div>
+            <div class="status-label">${escapeHtml(status)}</div>
+            <div class="support">${escapeHtml(getMeddpicCardSummary(state.currentMap, element))}</div>
+          `;
+          card.addEventListener('click', () => goToElement(element));
+          board.appendChild(card);
+        });
+        panel.appendChild(board);
+      }
+
+      function formatCompactCurrency(value) {
+        if (value === null || value === undefined || !Number.isFinite(value)) return '-';
+        return new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency: 'USD',
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+
+      function renderMetricsSummary(panel) {
+        const summary = getMetricSummary(state.currentMap);
+        const wrap = document.createElement('section');
+        wrap.className = 'metrics-summary';
+        const lowValidation = summary.metricCount > 0 && summary.validatedCount / summary.metricCount < 0.5;
+        wrap.innerHTML = `
+          <div class="metrics-summary-grid">
+            <div class="metric-summary-card total-impact">
+              <strong>Total Quantified Value</strong>
+              <div class="value">${escapeHtml(formatCompactCurrency(summary.quantifiedTotal))}</div>
+            </div>
+            <div class="metric-summary-card">
+              <strong>Number of Metrics</strong>
+              <div class="value">${summary.metricCount}</div>
+            </div>
+            <div class="metric-summary-card ${lowValidation ? 'low-validation' : ''}">
+              <strong>Customer-Validated</strong>
+              <div class="value">${summary.validatedCount}</div>
+            </div>
+            <div class="metric-summary-card ${lowValidation ? 'low-validation' : ''}">
+              <strong>Validation Ratio</strong>
+              <div class="value">${escapeHtml(summary.validationRatioText)}</div>
+            </div>
+            <div class="metric-summary-card">
+              <strong>Average Improvement</strong>
+              <div class="value">${summary.averageImprovement === null ? '-' : `${summary.averageImprovement.toFixed(1)}%`}</div>
+            </div>
+          </div>
+        `;
+        panel.appendChild(wrap);
+      }
+
       function renderInspectionHeader(panel) {
         const health = calculateDealHealth(state.currentMap);
         const completeness = getMeddpicCompleteness(state.currentMap);
         const completeCount = MEDDPIC_ELEMENTS.filter((e) => completeness[e] === 'complete').length;
         const topWarning = health.warnings[0] || 'No critical warning.';
+        const healthClass = `health-${health.healthLabel.toLowerCase()}`;
 
         const strip = document.createElement('section');
         strip.className = 'inspection-strip';
         strip.innerHTML = `
           <div class="inspection-grid">
-            <div class="inspection-item"><strong>Calculated Health</strong><span class="health-chip health-${health.healthLabel.toLowerCase()}">${health.healthLabel}</span></div>
-            <div class="inspection-item"><strong>Score</strong>${health.score}</div>
-            <div class="inspection-item"><strong>Forecast</strong>${escapeHtml(state.currentMap.forecastCategory || '-')}</div>
-            <div class="inspection-item"><strong>MEDDPIC Complete</strong>${completeCount}/8 complete</div>
-            <div class="inspection-item"><strong>Last Updated</strong>${escapeHtml(formatDateTime(state.currentMap.updatedAt))}</div>
-            <div class="inspection-item"><strong>Top Risk</strong>${escapeHtml(topWarning)}</div>
+            <div class="inspection-item emphasis-health ${healthClass}">
+              <strong>Calculated Health</strong>
+              <div class="inspection-value">${escapeHtml(health.healthLabel)}</div>
+            </div>
+            <div class="inspection-item emphasis-score">
+              <strong>Score</strong>
+              <div class="inspection-value">${health.score}</div>
+            </div>
+            <div class="inspection-item">
+              <strong>Forecast</strong>
+              <div class="inspection-value">${escapeHtml(state.currentMap.forecastCategory || '-')}</div>
+            </div>
+            <div class="inspection-item ${completeCount >= 6 ? 'health-green' : completeCount >= 3 ? 'health-amber' : 'health-red'}">
+              <strong>MEDDPIC Complete</strong>
+              <div class="inspection-value">${completeCount}/8</div>
+            </div>
+            <div class="inspection-item">
+              <strong>Last Updated</strong>
+              <div class="inspection-value">${escapeHtml(formatDateTime(state.currentMap.updatedAt))}</div>
+            </div>
+            <div class="inspection-item emphasis-risk ${healthClass}">
+              <strong>Top Risk</strong>
+              <div class="inspection-value">${escapeHtml(topWarning)}</div>
+            </div>
           </div>
-          <div class="chip-row">${MEDDPIC_ELEMENTS.map((elName) => {
+          <div class="meddpic-chip-row">${MEDDPIC_ELEMENTS.map((elName) => {
             const status = completeness[elName];
-            return `<span class="status-chip status-${status}">${escapeHtml(elName)}: ${escapeHtml(status)}</span>`;
+            return `<button type="button" class="status-chip status-${status}" data-meddpic-chip="${escapeHtml(elName)}"><span class="chip-name">${escapeHtml(elName)}</span><span class="chip-state">${escapeHtml(status)}</span></button>`;
           }).join('')}</div>
         `;
+        strip.querySelectorAll('[data-meddpic-chip]').forEach((chip) => {
+          chip.addEventListener('click', () => goToElement(chip.getAttribute('data-meddpic-chip')));
+        });
         panel.appendChild(strip);
 
         const actions = getNextBestActions(state.currentMap);
         const actionsPanel = document.createElement('section');
         actionsPanel.className = 'next-actions';
-        actionsPanel.innerHTML = '<h3>Next Best Actions (Top 3)</h3>';
+        actionsPanel.innerHTML = '<h3>Next Best Actions (Top 3)</h3><div class="next-actions-list"></div>';
+        const list = actionsPanel.querySelector('.next-actions-list');
         actions.forEach((action, idx) => {
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.textContent = `${idx + 1}. ${action.text}`;
+          const priorityClass = idx === 0 ? 'priority-high' : idx === 1 ? 'priority-medium' : 'priority-low';
+          btn.className = `next-action-item ${priorityClass}`;
+          btn.innerHTML = `<span class="rank">${idx + 1}.</span><span>${escapeHtml(action.text)}</span>`;
           btn.addEventListener('click', () => goToElement(action.element));
-          actionsPanel.appendChild(btn);
+          list.appendChild(btn);
         });
         if (!actions.length) {
           const done = document.createElement('div');
@@ -2316,9 +2705,44 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
 
       function renderTableRow(arrayKey, headers, row, rowIndex, tbody) {
         const tr = document.createElement('tr');
+        if (arrayKey === 'metrics') {
+          const missingKeyFields = !hasValue(row?.[2]) || !hasValue(row?.[3]) || !hasValue(row?.[4]);
+          if (missingKeyFields) tr.classList.add('metric-row-incomplete');
+        }
         headers.forEach((_, colIndex) => {
           const td = document.createElement('td');
           const value = Array.isArray(row) ? row[colIndex] : '';
+          if (arrayKey === 'metrics') {
+            if (colIndex === 3) {
+              const impactNum = parseNumericValue(value);
+              const impactClass = impactNum === null ? 'low' : impactNum >= 100000 ? 'high' : impactNum >= 25000 ? 'medium' : 'low';
+              const pill = document.createElement('div');
+              pill.className = `metric-impact ${impactClass}`;
+              pill.textContent = value ? String(value) : 'Missing impact';
+              td.appendChild(pill);
+            }
+            if (colIndex === 4) {
+              const normalized = String(value || '').trim().toLowerCase();
+              const badge = document.createElement('span');
+              badge.className = 'metric-validation-badge ' + (normalized === 'yes'
+                ? 'metric-validation-yes'
+                : normalized === 'no'
+                  ? 'metric-validation-no'
+                  : 'metric-validation-unknown');
+              badge.textContent = normalized === 'yes' ? '✓ Validated' : normalized === 'no' ? '✕ Not Validated' : '? Unknown';
+              td.appendChild(badge);
+            }
+            if (colIndex === 2) {
+              const delta = calculateMetricDelta(row?.[1], row?.[2]);
+              if (delta) {
+                const deltaBadge = document.createElement('span');
+                const qualityClass = delta.pct >= 20 ? 'metric-validation-yes' : delta.pct > 0 ? 'metric-validation-unknown' : 'metric-validation-no';
+                deltaBadge.className = `metric-delta-badge ${qualityClass}`;
+                deltaBadge.textContent = `${delta.pct >= 0 ? '+' : ''}${delta.pct.toFixed(1)}%`;
+                td.appendChild(deltaBadge);
+              }
+            }
+          }
           td.appendChild(createCellEditor(arrayKey, rowIndex, colIndex, value));
           tr.appendChild(td);
         });
@@ -2336,6 +2760,9 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
 
       function renderTablePanel(panel, arrayKey) {
         if (!state.currentMap) return;
+        if (arrayKey === 'metrics') {
+          renderMetricsSummary(panel);
+        }
 
         const headers = TABLE_SCHEMAS[arrayKey];
         if (!Array.isArray(state.currentMap[arrayKey])) state.currentMap[arrayKey] = [];
@@ -2396,6 +2823,9 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           if (tab === 'Summary') {
             renderSummaryPanel(panel);
           } else {
+            if (tab === 'MEDDPIC Scorecard') {
+              renderMeddpicBoard(panel);
+            }
             renderTablePanel(panel, TAB_TO_KEY[tab]);
           }
 
