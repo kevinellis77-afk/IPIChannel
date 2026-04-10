@@ -298,6 +298,139 @@
       margin-left: 4px;
       font-weight: 600;
     }
+
+    .print-report {
+      display: none;
+      padding: 24px;
+      background: #fff;
+    }
+
+    .print-report h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+    }
+
+    .print-report-meta {
+      color: var(--muted);
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .print-section {
+      margin-bottom: 18px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .print-section h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 4px;
+      color: #111827;
+    }
+
+    .print-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 14px;
+    }
+
+    .print-summary-item {
+      padding: 4px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 13px;
+    }
+
+    .print-summary-item strong {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #374151;
+      margin-bottom: 2px;
+    }
+
+    .print-empty {
+      font-size: 13px;
+      color: #4b5563;
+      font-style: italic;
+      margin: 4px 0 0;
+    }
+
+    .print-table-wrap {
+      border: 1px solid #cbd5e1;
+      border-radius: 0;
+      overflow: visible;
+      box-shadow: none;
+      page-break-inside: auto;
+    }
+
+    .print-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 0;
+    }
+
+    .print-table th,
+    .print-table td {
+      border: 1px solid #d1d5db;
+      padding: 6px;
+      font-size: 12px;
+      color: #111827;
+      word-break: break-word;
+      vertical-align: top;
+      background: #fff;
+    }
+
+    .print-table th {
+      background: #fff;
+      font-weight: 700;
+      position: static;
+    }
+
+    .print-table tr,
+    .print-table td,
+    .print-table th {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    @media print {
+      @page {
+        margin: 0.5in;
+      }
+
+      :root {
+        --text: #000;
+        --muted: #2f2f2f;
+        --border: #c7c7c7;
+      }
+
+      body {
+        display: block;
+        background: #fff;
+        color: #000;
+        height: auto;
+      }
+
+      .topbar,
+      .sidebar,
+      .tabs,
+      .shell {
+        display: none !important;
+      }
+
+      .print-report {
+        display: block;
+      }
+
+      .print-report * {
+        color: #000 !important;
+        box-shadow: none !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -310,6 +443,7 @@
     <button id="exportCsvBtn" type="button">Export CSV</button>
     <button id="exportJsonBtn" type="button">Export JSON Backup</button>
     <button id="importJsonBtn" type="button">Import JSON</button>
+    <button id="exportPdfBtn" type="button">Export PDF</button>
     <input id="importJsonInput" type="file" accept="application/json,.json" hidden />
     <input id="searchInput" class="search-input" type="search" placeholder="Search MAPs" />
     <span id="cacheStatus" class="status saved">● Saved</span>
@@ -355,6 +489,8 @@
       <section id="panels" style="flex:1; min-height:0;"></section>
     </main>
   </div>
+
+  <section id="printReport" class="print-report" aria-hidden="true"></section>
 
   <script>
     (() => {
@@ -438,6 +574,8 @@
         exportJsonBtn: document.getElementById('exportJsonBtn'),
         importJsonBtn: document.getElementById('importJsonBtn'),
         importJsonInput: document.getElementById('importJsonInput'),
+        exportPdfBtn: document.getElementById('exportPdfBtn'),
+        printReport: document.getElementById('printReport'),
         unsavedIndicator: document.getElementById('unsavedIndicator'),
         cacheStatus: document.getElementById('cacheStatus'),
         sortSelect: document.getElementById('sortSelect'),
@@ -1221,6 +1359,96 @@
         renderAll();
       }
 
+
+
+      function renderPrintTable(title, headers, rows) {
+        if (!Array.isArray(rows) || !rows.length) {
+          return `
+            <section class="print-section">
+              <h2>${escapeHtml(title)}</h2>
+              <p class="print-empty">No entries recorded.</p>
+            </section>
+          `;
+        }
+
+        const head = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('');
+        const body = rows
+          .map((row) => {
+            const safeRow = Array.isArray(row) ? row : [];
+            const cells = headers
+              .map((_, i) => `<td>${escapeHtml(safeRow[i] || '')}</td>`)
+              .join('');
+            return `<tr>${cells}</tr>`;
+          })
+          .join('');
+
+        return `
+          <section class="print-section">
+            <h2>${escapeHtml(title)}</h2>
+            <div class="print-table-wrap">
+              <table class="print-table">
+                <thead><tr>${head}</tr></thead>
+                <tbody>${body}</tbody>
+              </table>
+            </div>
+          </section>
+        `;
+      }
+
+      function buildPrintReport(mapObj) {
+        const summaryFields = [
+          ['Opportunity Name', mapObj.opportunityName],
+          ['Account Name', mapObj.accountName],
+          ['Deal Value', mapObj.dealValue],
+          ['Forecast Category', mapObj.forecastCategory],
+          ['Close Date', mapObj.closeDate],
+          ['Sales Owner', mapObj.salesOwner],
+          ['Economic Buyer', mapObj.economicBuyer],
+          ['Champion', mapObj.champion],
+          ['Overall Health', mapObj.overallHealth],
+          ['Notes', mapObj.notes]
+        ];
+
+        const summaryHtml = summaryFields
+          .map(([label, value]) => `
+            <div class="print-summary-item">
+              <strong>${escapeHtml(label)}</strong>
+              <span>${escapeHtml(value || '-')}</span>
+            </div>
+          `)
+          .join('');
+
+        const generatedAt = new Date().toLocaleString();
+        return `
+          <h1>${escapeHtml(mapObj.opportunityName || 'Untitled Opportunity')}</h1>
+          <div class="print-report-meta">
+            Account: ${escapeHtml(mapObj.accountName || 'N/A')} • Generated: ${escapeHtml(generatedAt)}
+          </div>
+
+          <section class="print-section">
+            <h2>Summary</h2>
+            <div class="print-summary-grid">${summaryHtml}</div>
+          </section>
+
+          ${renderPrintTable('MEDDPIC Scorecard', TABLE_SCHEMAS.meddpicScorecard, mapObj.meddpicScorecard)}
+          ${renderPrintTable('Metrics', TABLE_SCHEMAS.metrics, mapObj.metrics)}
+          ${renderPrintTable('Stakeholders', TABLE_SCHEMAS.stakeholders, mapObj.stakeholders)}
+          ${renderPrintTable('Decision Process', TABLE_SCHEMAS.decisionProcess, mapObj.decisionProcess)}
+          ${renderPrintTable('Paper Process', TABLE_SCHEMAS.paperProcess, mapObj.paperProcess)}
+          ${renderPrintTable('Competition', TABLE_SCHEMAS.competition, mapObj.competition)}
+          ${renderPrintTable('Action Plan', TABLE_SCHEMAS.actionPlan, mapObj.actionPlan)}
+        `;
+      }
+
+      function exportCurrentMapPdf() {
+        if (!state.currentMap) {
+          showActionMessage('No MAP selected. Please select a MAP first.', 'error');
+          return;
+        }
+        el.printReport.innerHTML = buildPrintReport(state.currentMap);
+        window.print();
+      }
+
       function escapeHtml(str) {
         return String(str)
           .replaceAll('&', '&amp;')
@@ -1282,6 +1510,7 @@
       el.exportJsonBtn.addEventListener('click', exportJsonBackup);
       el.importJsonBtn.addEventListener('click', () => el.importJsonInput.click());
       el.importJsonInput.addEventListener('change', (e) => importJsonBackup(e.target.files && e.target.files[0]));
+      el.exportPdfBtn.addEventListener('click', exportCurrentMapPdf);
 
       init();
     })();
