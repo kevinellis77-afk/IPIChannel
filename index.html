@@ -53,6 +53,22 @@
       display: block;
     }
 
+    .brand-mark {
+      fill: #0b3a8e;
+    }
+
+    .brand-dot {
+      fill: #2563eb;
+    }
+
+    .brand-word {
+      fill: #0f172a;
+      font-family: Inter, Arial, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+
     button, input, select, textarea {
       background: var(--panel);
       color: var(--text);
@@ -617,7 +633,13 @@
   <header class="topbar">
     <div class="app-title" aria-label="Exceptional Customer Contact logo">
       <svg viewBox="0 0 560 100" role="img" aria-hidden="true" focusable="false">
-        <rect x="0" y="0" width="560" height="100" fill="#ececec" />
+        <g transform="translate(4 12)">
+          <rect class="brand-mark" x="0" y="0" width="76" height="76" rx="16"></rect>
+          <path class="brand-dot" d="M18 54h40a8 8 0 0 1 0 16H18a8 8 0 0 1 0-16z"></path>
+          <path class="brand-dot" d="M18 30h52a8 8 0 0 1 0 16H18a8 8 0 0 1 0-16z"></path>
+          <circle class="brand-dot" cx="26" cy="22" r="8"></circle>
+        </g>
+        <text class="brand-word" x="100" y="58">Exceptional Customer Contact</text>
       </svg>
     </div>
     <button id="newBtn" type="button">New MAP</button>
