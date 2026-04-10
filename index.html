@@ -168,6 +168,30 @@
       text-overflow: ellipsis;
     }
 
+    .map-item .meta-wrap {
+      display: grid;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .health-chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .health-green { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+    .health-amber { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+    .health-red { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+    .warning-inline {
+      color: #7c2d12;
+      font-size: 11px;
+    }
+
     .editor {
       min-width: 0;
       display: flex;
@@ -204,6 +228,77 @@
     }
 
     .tab-panel.active { display: block; }
+
+    .inspection-strip {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .inspection-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+    }
+
+    .inspection-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--panel-2);
+      font-size: 12px;
+    }
+
+    .inspection-item strong {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .status-chip {
+      border-radius: 999px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .status-complete { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
+    .status-partial { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+    .status-missing { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+
+    .next-actions {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: #f8fbff;
+      margin-bottom: 12px;
+    }
+
+    .next-actions h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #1e3a8a;
+    }
+
+    .next-actions button {
+      width: 100%;
+      text-align: left;
+      margin-bottom: 6px;
+      background: #fff;
+    }
 
     .form-grid {
       display: grid;
@@ -540,12 +635,15 @@
           <label for="sortSelect">Sort by</label>
           <select id="sortSelect">
             <option value="updatedAt">Last Updated</option>
+            <option value="health">Health</option>
+            <option value="closeDate">Close Date</option>
+            <option value="dealValue">Deal Value</option>
             <option value="accountName">Account</option>
             <option value="opportunityName">Opportunity</option>
           </select>
         </div>
         <div>
-          <label for="filterHealth">Filter: Overall Health</label>
+          <label for="filterHealth">Filter: Deal Health</label>
           <select id="filterHealth">
             <option value="">All</option>
           </select>
@@ -636,22 +734,25 @@
         'Action Plan': 'actionPlan'
       };
 
+      const MEDDPIC_ELEMENTS = ['Metrics', 'Economic Buyer', 'Decision Criteria', 'Decision Process', 'Paper Process', 'Identify Pain', 'Champion', 'Competition'];
+      const MEDDPIC_ACTION_PRIORITIES = ['Economic Buyer', 'Champion', 'Decision Process', 'Metrics', 'Identify Pain', 'Paper Process', 'Competition', 'Decision Criteria'];
+
       const TABLE_SCHEMAS = {
-        meddpicScorecard: ['Element', 'Status', 'Evidence', 'Owner', 'Notes'],
-        metrics: ['Metric', 'Current', 'Target', 'Impact', 'Notes'],
+        meddpicScorecard: ['Element', 'Status', 'Current State', 'Evidence', 'Owner', 'Notes'],
+        metrics: ['Business Metric', 'Current', 'Target', 'Financial Impact', 'Customer Validated', 'Notes'],
         stakeholders: ['Name', 'Role', 'Influence', 'Support', 'Notes'],
         decisionProcess: ['Step', 'Owner', 'Due Date', 'Status', 'Notes'],
         paperProcess: ['Document', 'Owner', 'Stage', 'Due Date', 'Notes'],
         competition: ['Competitor', 'Strength', 'Weakness', 'Status', 'Notes'],
-        actionPlan: ['Action', 'Owner', 'Due Date', 'Status', 'Notes']
+        actionPlan: ['Action', 'Owner', 'Due Date', 'Status', 'Linked MEDDPIC Element', 'Notes']
       };
 
       const TABLE_DROPDOWNS = {
-        meddpicScorecard: { 1: STATUS_OPTIONS },
+        meddpicScorecard: { 0: MEDDPIC_ELEMENTS, 1: STATUS_OPTIONS },
         stakeholders: { 2: INFLUENCE_OPTIONS, 3: ATTITUDE_OPTIONS },
         decisionProcess: { 3: STATUS_OPTIONS },
         competition: { 1: STRENGTH_OPTIONS, 3: STATUS_OPTIONS },
-        actionPlan: { 3: STATUS_OPTIONS }
+        actionPlan: { 3: STATUS_OPTIONS, 4: MEDDPIC_ELEMENTS }
       };
 
       const state = {
@@ -783,15 +884,14 @@
         sample.salesOwner = 'Jordan Lee';
         sample.economicBuyer = 'Rita Shah';
         sample.champion = 'Darren Wong';
-        sample.overallHealth = 'Amber';
         sample.notes = 'Pilot finished. Procurement review starts next week.';
-        sample.meddpicScorecard.push(['Metrics', 'In Progress', 'Baseline validated', 'Jordan Lee', 'Need executive sign-off']);
-        sample.metrics.push(['Cycle time reduction', '18%', '30%', 'Operational efficiency', 'Need final benchmark']);
+        sample.meddpicScorecard.push(['Metrics', 'In Progress', 'Cycle time baseline 18%', 'Validated by ops leader', 'Jordan Lee', 'Need executive sign-off']);
+        sample.metrics.push(['Cycle time reduction', '18%', '30%', '$250K annual gain', 'Yes', 'Need final benchmark']);
         sample.stakeholders.push(['Rita Shah', 'CFO', 'High', 'Supporter', 'Focused on ROI']);
         sample.decisionProcess.push(['Security review', 'IT Security', '2026-05-10', 'Not Started', 'Questionnaire sent']);
         sample.paperProcess.push(['MSA redlines', 'Legal', 'Drafting', '2026-05-22', 'Customer requested new clause']);
         sample.competition.push(['Contoso Suite', 'Amber', 'Limited automation', 'In Progress', 'Competing at lower price']);
-        sample.actionPlan.push(['Schedule EB value recap', 'Jordan Lee', '2026-04-21', 'Not Started', 'Include champion in prep']);
+        sample.actionPlan.push(['Schedule EB value recap', 'Jordan Lee', '2026-04-21', 'Not Started', 'Economic Buyer', 'Include champion in prep']);
         return sample;
       }
 
@@ -869,6 +969,194 @@
           return false;
         }
         return true;
+      }
+
+      function getRows(mapObj, key) {
+        return Array.isArray(mapObj?.[key]) ? mapObj[key] : [];
+      }
+
+      function hasValue(value) {
+        return String(value ?? '').trim().length > 0;
+      }
+
+      function findScorecardRow(mapObj, element) {
+        const rows = getRows(mapObj, 'meddpicScorecard');
+        return rows.find((row) => String(row?.[0] || '').trim().toLowerCase() === element.toLowerCase()) || null;
+      }
+
+      function getMeddpicCompleteness(mapObj) {
+        const metricsRows = getRows(mapObj, 'metrics');
+        const decisionRows = getRows(mapObj, 'decisionProcess');
+        const paperRows = getRows(mapObj, 'paperProcess');
+        const competitionRows = getRows(mapObj, 'competition');
+        const stakeholders = getRows(mapObj, 'stakeholders');
+        const score = (element) => findScorecardRow(mapObj, element);
+        const countFields = (checks) => checks.filter(Boolean).length;
+        const toStatus = (scoreCount, total, completeThreshold = total) => {
+          if (scoreCount >= completeThreshold) return 'complete';
+          if (scoreCount > 0) return 'partial';
+          return 'missing';
+        };
+
+        const metricsStatus = (() => {
+          const complete = metricsRows.some((r) => hasValue(r?.[0]) && hasValue(r?.[2]) && hasValue(r?.[3]) && String(r?.[4] || '').trim().toLowerCase() === 'yes');
+          if (complete) return 'complete';
+          const partial = metricsRows.some((r) => hasValue(r?.[0]) || hasValue(r?.[2]) || hasValue(r?.[3]) || hasValue(r?.[4]));
+          return partial ? 'partial' : 'missing';
+        })();
+
+        const economicBuyerRow = score('Economic Buyer');
+        const economicBuyerStatus = toStatus(
+          countFields([hasValue(mapObj?.economicBuyer), hasValue(economicBuyerRow?.[3])]),
+          2
+        );
+
+        const decisionCriteriaRow = score('Decision Criteria');
+        const decisionCriteriaStatus = toStatus(
+          countFields([hasValue(decisionCriteriaRow?.[2]), hasValue(decisionCriteriaRow?.[3])]),
+          2
+        );
+
+        const decisionProcessStatus = (() => {
+          const complete = decisionRows.some((r) => hasValue(r?.[0]) && hasValue(r?.[1]) && hasValue(r?.[2]));
+          if (complete) return 'complete';
+          const partial = decisionRows.some((r) => hasValue(r?.[0]) || hasValue(r?.[1]) || hasValue(r?.[2]));
+          return partial ? 'partial' : 'missing';
+        })();
+
+        const paperProcessStatus = (() => {
+          const complete = paperRows.some((r) => hasValue(r?.[0]) && hasValue(r?.[1]) && hasValue(r?.[2]));
+          if (complete) return 'complete';
+          const partial = paperRows.some((r) => hasValue(r?.[0]) || hasValue(r?.[1]) || hasValue(r?.[2]));
+          return partial ? 'partial' : 'missing';
+        })();
+
+        const painRow = score('Identify Pain');
+        const identifyPainStatus = toStatus(
+          countFields([hasValue(painRow?.[2]), hasValue(painRow?.[3])]),
+          2
+        );
+
+        const championExists = stakeholders.some((s) => String(s?.[1] || '').trim().toLowerCase() === 'champion');
+        const championStatus = toStatus(
+          countFields([hasValue(mapObj?.champion), championExists]),
+          2
+        );
+
+        const competitionStatus = (() => {
+          const complete = competitionRows.some((r) => hasValue(r?.[0]) && hasValue(r?.[2]) && hasValue(r?.[4]));
+          if (complete) return 'complete';
+          const partial = competitionRows.some((r) => hasValue(r?.[0]) || hasValue(r?.[2]) || hasValue(r?.[4]));
+          return partial ? 'partial' : 'missing';
+        })();
+
+        return {
+          Metrics: metricsStatus,
+          'Economic Buyer': economicBuyerStatus,
+          'Decision Criteria': decisionCriteriaStatus,
+          'Decision Process': decisionProcessStatus,
+          'Paper Process': paperProcessStatus,
+          'Identify Pain': identifyPainStatus,
+          Champion: championStatus,
+          Competition: competitionStatus
+        };
+      }
+
+      function calculateDealHealth(mapObj) {
+        const completeness = getMeddpicCompleteness(mapObj);
+        const result = { score: 0, healthLabel: 'Red', warnings: [], strengths: [], missingItems: [] };
+        const metricsRows = getRows(mapObj, 'metrics');
+        const decisionRows = getRows(mapObj, 'decisionProcess');
+        const paperRows = getRows(mapObj, 'paperProcess');
+        const competitionRows = getRows(mapObj, 'competition');
+        const stakeholders = getRows(mapObj, 'stakeholders');
+        const ebRow = findScorecardRow(mapObj, 'Economic Buyer');
+        const dcRow = findScorecardRow(mapObj, 'Decision Criteria');
+        const painRow = findScorecardRow(mapObj, 'Identify Pain');
+
+        const add = (points, warning, strength, missingItem = '') => {
+          result.score += points;
+          if (warning) result.warnings.push(warning);
+          if (strength) result.strengths.push(strength);
+          if (missingItem) result.missingItems.push(missingItem);
+        };
+
+        if (!metricsRows.length) add(-2, 'No metrics captured.', '', 'Metrics');
+        else if (!metricsRows.some((r) => hasValue(r?.[2]) && hasValue(r?.[3]))) add(-1, 'Metrics are missing target or financial impact.', '', 'Metrics');
+        else add(2, '', 'At least one quantified metric is defined.');
+
+        if (!hasValue(mapObj?.economicBuyer)) add(-3, 'Economic Buyer is missing.', '', 'Economic Buyer');
+        else if (!hasValue(ebRow?.[3]) && !hasValue(ebRow?.[2])) add(-1, 'Economic Buyer evidence is weak.', '', 'Economic Buyer');
+        else add(2, '', 'Economic Buyer identified with evidence.');
+
+        const championStakeholder = stakeholders.some((s) => String(s?.[1] || '').trim().toLowerCase() === 'champion');
+        const championSupport = stakeholders.some((s) => hasValue(s?.[3]));
+        if (!hasValue(mapObj?.champion)) add(-3, 'Champion is missing.', '', 'Champion');
+        else if (!championStakeholder || !championSupport) add(-1, 'Champion exists but stakeholder evidence is weak.', '', 'Champion');
+        else add(2, '', 'Champion is identified with support signal.');
+
+        if (!dcRow || (!hasValue(dcRow?.[2]) && !hasValue(dcRow?.[3]))) add(-2, 'Decision Criteria not documented.', '', 'Decision Criteria');
+        else if (hasValue(dcRow?.[2]) && !hasValue(dcRow?.[3])) add(-1, 'Decision Criteria evidence is missing.', '', 'Decision Criteria');
+        else add(1, '', 'Decision Criteria captured with evidence.');
+
+        if (!decisionRows.length) add(-2, 'Decision Process is not mapped.', '', 'Decision Process');
+        else if (!decisionRows.some((r) => hasValue(r?.[1]) && hasValue(r?.[2]))) add(-1, 'Decision Process rows lack approver/date.', '', 'Decision Process');
+        else add(2, '', 'Decision Process has approvers and dates.');
+
+        if (!paperRows.length) add(-2, 'Paper Process is not mapped.', '', 'Paper Process');
+        else if (!paperRows.some((r) => hasValue(r?.[1]) && hasValue(r?.[2]) && hasValue(r?.[3]))) add(-1, 'Paper Process details are incomplete.', '', 'Paper Process');
+        else add(1, '', 'Paper Process has ownership and status detail.');
+
+        if (!painRow || (!hasValue(painRow?.[2]) && !hasValue(painRow?.[3]))) add(-3, 'Identify Pain is blank.', '', 'Identify Pain');
+        else if (hasValue(painRow?.[2]) && !hasValue(painRow?.[3])) add(-1, 'Pain statement lacks quantified evidence.', '', 'Identify Pain');
+        else add(2, '', 'Compelling pain is documented with evidence.');
+
+        if (!competitionRows.length) add(-1, 'No competition record exists.', '', 'Competition');
+        else if (!competitionRows.some((r) => hasValue(r?.[2]) && hasValue(r?.[4]))) add(-1, 'Competition strategy is incomplete.', '', 'Competition');
+        else add(1, '', 'Competition strategy is documented.');
+
+        result.healthLabel = result.score >= 5 ? 'Green' : result.score >= 1 ? 'Amber' : 'Red';
+        result.missingItems = [...new Set(result.missingItems.filter((m) => completeness[m] !== 'complete'))];
+        return result;
+      }
+
+      function getNextBestActions(mapObj) {
+        const completeness = getMeddpicCompleteness(mapObj);
+        const actions = {
+          'Economic Buyer': 'Identify and engage the economic buyer directly',
+          Metrics: 'Quantify business outcomes and validate target metrics with the customer',
+          Champion: 'Confirm a true internal champion and assess relationship strength',
+          'Decision Process': 'Map decision stages, approvers, and target decision dates',
+          'Paper Process': 'Clarify procurement, legal, and security approval steps',
+          Competition: 'Document incumbent/competitor position and define competitive strategy',
+          'Identify Pain': 'Clarify compelling pain and quantify cost of inaction',
+          'Decision Criteria': 'Document decision criteria and secure customer evidence'
+        };
+        const ranked = MEDDPIC_ACTION_PRIORITIES
+          .filter((element) => completeness[element] !== 'complete')
+          .sort((a, b) => {
+            const scoreA = completeness[a] === 'missing' ? 0 : 1;
+            const scoreB = completeness[b] === 'missing' ? 0 : 1;
+            return scoreA - scoreB;
+          })
+          .slice(0, 3)
+          .map((element) => ({ element, text: actions[element] }));
+        return ranked;
+      }
+
+      function validateForecastChange(mapObj, newForecastCategory) {
+        const completeness = getMeddpicCompleteness(mapObj);
+        const issues = [];
+        const statusOkay = (elName) => completeness[elName] === 'complete';
+        if (newForecastCategory === 'Commit') {
+          ['Economic Buyer', 'Champion', 'Decision Process', 'Metrics'].forEach((e) => {
+            if (!statusOkay(e)) issues.push(`${e} must be complete`);
+          });
+        } else if (newForecastCategory === 'Best Case') {
+          const qualifiedCount = MEDDPIC_ELEMENTS.filter((e) => completeness[e] !== 'missing').length;
+          if (qualifiedCount < 4) issues.push('Best Case requires at least 4/8 MEDDPIC elements to be partial or complete');
+        }
+        return { valid: issues.length === 0, issues, completeness };
       }
 
       function markDirty(dirty = true) {
@@ -1178,6 +1466,21 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         Object.keys(TABLE_SCHEMAS).forEach((key) => {
           cleaned[key] = Array.isArray(rawMap[key]) ? rawMap[key] : [];
         });
+        cleaned.meddpicScorecard = cleaned.meddpicScorecard.map((row) => {
+          if (!Array.isArray(row)) return row;
+          if (row.length === 5) return [row[0], row[1], '', row[2], row[3], row[4]];
+          return row;
+        });
+        cleaned.metrics = cleaned.metrics.map((row) => {
+          if (!Array.isArray(row)) return row;
+          if (row.length === 5) return [row[0], row[1], row[2], row[3], '', row[4]];
+          return row;
+        });
+        cleaned.actionPlan = cleaned.actionPlan.map((row) => {
+          if (!Array.isArray(row)) return row;
+          if (row.length === 5) return [row[0], row[1], row[2], row[3], '', row[4]];
+          return row;
+        });
         return cleaned;
       }
 
@@ -1219,7 +1522,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
             mapObj.salesOwner || '',
             mapObj.economicBuyer || '',
             mapObj.champion || '',
-            mapObj.overallHealth || '',
+            calculateDealHealth(mapObj).healthLabel,
             mapObj.notes || ''
           ]]
         );
@@ -1239,6 +1542,12 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         if (!state.currentMap) {
           showActionMessage('No MAP selected. Please select a MAP first.', 'error');
           return;
+        }
+        const required = ['opportunityName', 'accountName', 'salesOwner'];
+        const missing = required.filter((k) => !hasValue(state.currentMap[k]));
+        if (missing.length) {
+          const proceed = confirm(`Warning: missing required summary fields for CSV (${missing.join(', ')}). Continue export?`);
+          if (!proceed) return;
         }
 
         const rows = buildMapCsvRows(state.currentMap);
@@ -1357,6 +1666,9 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         const toText = (v) => String(v || '').toLowerCase();
         return [...list].sort((a, b) => {
           if (state.sortBy === 'updatedAt') return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+          if (state.sortBy === 'health') return calculateDealHealth(b).score - calculateDealHealth(a).score;
+          if (state.sortBy === 'closeDate') return new Date(a.closeDate || '2100-01-01') - new Date(b.closeDate || '2100-01-01');
+          if (state.sortBy === 'dealValue') return Number(b.dealValue || 0) - Number(a.dealValue || 0);
           return toText(a[state.sortBy]).localeCompare(toText(b[state.sortBy]));
         });
       }
@@ -1366,7 +1678,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         const maps = state.maps.filter((m) => {
           const searchMatch = !q || [m.opportunityName, m.accountName, m.salesOwner, m.champion]
             .some((v) => String(v || '').toLowerCase().includes(q));
-          const healthMatch = !state.filters.overallHealth || m.overallHealth === state.filters.overallHealth;
+          const healthMatch = !state.filters.overallHealth || calculateDealHealth(m).healthLabel === state.filters.overallHealth;
           const ownerMatch = !state.filters.salesOwner || m.salesOwner === state.filters.salesOwner;
           const forecastMatch = !state.filters.forecastCategory || m.forecastCategory === state.filters.forecastCategory;
           return searchMatch && healthMatch && ownerMatch && forecastMatch;
@@ -1457,7 +1769,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
       }
 
       function refreshSidebarFilterOptions() {
-        const uniqueHealth = [...new Set(state.maps.map((m) => (m.overallHealth || '').trim()).filter(Boolean))].sort();
+        const uniqueHealth = [...new Set(state.maps.map((m) => calculateDealHealth(m).healthLabel).filter(Boolean))].sort();
         const uniqueOwners = [...new Set(state.maps.map((m) => (m.salesOwner || '').trim()).filter(Boolean))].sort();
         const uniqueForecast = [...new Set(state.maps.map((m) => (m.forecastCategory || '').trim()).filter(Boolean))].sort();
 
@@ -1471,13 +1783,24 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         const maps = filteredMaps();
         el.mapList.innerHTML = '';
         maps.forEach((m) => {
+          const health = calculateDealHealth(m);
+          const completeness = getMeddpicCompleteness(m);
+          const majorWarnings = ['Economic Buyer', 'Champion', 'Metrics', 'Decision Process']
+            .filter((k) => completeness[k] === 'missing')
+            .map((k) => `Missing ${k === 'Decision Process' ? 'Decision Process' : k === 'Economic Buyer' ? 'EB' : k}`);
           const item = document.createElement('button');
           item.type = 'button';
           item.className = 'map-item' + (m.id === state.currentMapId ? ' active' : '');
+          const healthClass = `health-${health.healthLabel.toLowerCase()}`;
           item.innerHTML = `
             <div class="title">${escapeHtml(m.opportunityName || '(Untitled Opportunity)')}</div>
-            <div class="meta">${escapeHtml(m.accountName || '(No Account)')} • ${escapeHtml(m.salesOwner || '(No Owner)')}</div>
-            <div class="meta">Champion: ${escapeHtml(m.champion || '-')} • Updated: ${escapeHtml(formatDateTime(m.updatedAt))}</div>
+            <div class="meta">${escapeHtml(m.accountName || '(No Account)')} • ${escapeHtml(m.forecastCategory || 'No Forecast')}</div>
+            <div class="meta-wrap">
+              <div class="meta">Owner: ${escapeHtml(m.salesOwner || '(No Owner)')} • Value: ${escapeHtml(m.dealValue || '-')}</div>
+              <div class="meta">Updated: ${escapeHtml(formatDateTime(m.updatedAt))}</div>
+              <div><span class="health-chip ${healthClass}">${escapeHtml(health.healthLabel)} (${health.score})</span></div>
+              ${majorWarnings.length ? `<div class="warning-inline">${escapeHtml(majorWarnings.join(' • '))}</div>` : ''}
+            </div>
           `;
           item.addEventListener('click', () => setCurrentMap(m.id));
           el.mapList.appendChild(item);
@@ -1524,6 +1847,65 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         return select;
       }
 
+      function goToElement(element) {
+        const mapping = {
+          Metrics: 'Metrics',
+          'Economic Buyer': 'Summary',
+          'Decision Criteria': 'MEDDPIC Scorecard',
+          'Decision Process': 'Decision Process',
+          'Paper Process': 'Paper Process',
+          'Identify Pain': 'MEDDPIC Scorecard',
+          Champion: 'Stakeholders',
+          Competition: 'Competition'
+        };
+        state.activeTab = mapping[element] || 'Summary';
+        renderAll();
+      }
+
+      function renderInspectionHeader(panel) {
+        const health = calculateDealHealth(state.currentMap);
+        const completeness = getMeddpicCompleteness(state.currentMap);
+        const completeCount = MEDDPIC_ELEMENTS.filter((e) => completeness[e] === 'complete').length;
+        const topWarning = health.warnings[0] || 'No critical warning.';
+
+        const strip = document.createElement('section');
+        strip.className = 'inspection-strip';
+        strip.innerHTML = `
+          <div class="inspection-grid">
+            <div class="inspection-item"><strong>Calculated Health</strong><span class="health-chip health-${health.healthLabel.toLowerCase()}">${health.healthLabel}</span></div>
+            <div class="inspection-item"><strong>Score</strong>${health.score}</div>
+            <div class="inspection-item"><strong>Forecast</strong>${escapeHtml(state.currentMap.forecastCategory || '-')}</div>
+            <div class="inspection-item"><strong>MEDDPIC Complete</strong>${completeCount}/8 complete</div>
+            <div class="inspection-item"><strong>Last Updated</strong>${escapeHtml(formatDateTime(state.currentMap.updatedAt))}</div>
+            <div class="inspection-item"><strong>Top Risk</strong>${escapeHtml(topWarning)}</div>
+          </div>
+          <div class="chip-row">${MEDDPIC_ELEMENTS.map((elName) => {
+            const status = completeness[elName];
+            return `<span class="status-chip status-${status}">${escapeHtml(elName)}: ${escapeHtml(status)}</span>`;
+          }).join('')}</div>
+        `;
+        panel.appendChild(strip);
+
+        const actions = getNextBestActions(state.currentMap);
+        const actionsPanel = document.createElement('section');
+        actionsPanel.className = 'next-actions';
+        actionsPanel.innerHTML = '<h3>Next Best Actions (Top 3)</h3>';
+        actions.forEach((action, idx) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = `${idx + 1}. ${action.text}`;
+          btn.addEventListener('click', () => goToElement(action.element));
+          actionsPanel.appendChild(btn);
+        });
+        if (!actions.length) {
+          const done = document.createElement('div');
+          done.className = 'meta';
+          done.textContent = 'All primary MEDDPIC elements are complete.';
+          actionsPanel.appendChild(done);
+        }
+        panel.appendChild(actionsPanel);
+      }
+
       function renderSummaryPanel(panel) {
         if (!state.currentMap) return;
         const fields = [
@@ -1559,13 +1941,21 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         const forecastWrap = document.createElement('div');
         forecastWrap.className = 'form-field';
         forecastWrap.innerHTML = '<label>Forecast Category</label>';
-        forecastWrap.appendChild(createSelectControl(FORECAST_OPTIONS, state.currentMap.forecastCategory, (value) => updateCurrentField('forecastCategory', value)));
+        forecastWrap.appendChild(createSelectControl(FORECAST_OPTIONS, state.currentMap.forecastCategory, (value) => {
+          const validation = validateForecastChange(state.currentMap, value);
+          if (!validation.valid) {
+            alert(`Cannot set forecast to "${value}" yet:\n- ${validation.issues.join('\n- ')}`);
+            renderPanels();
+            return;
+          }
+          updateCurrentField('forecastCategory', value);
+        }));
         grid.appendChild(forecastWrap);
 
         const healthWrap = document.createElement('div');
         healthWrap.className = 'form-field';
-        healthWrap.innerHTML = '<label>Overall Health</label>';
-        healthWrap.appendChild(createSelectControl(STRENGTH_OPTIONS, state.currentMap.overallHealth, (value) => updateCurrentField('overallHealth', value)));
+        const health = calculateDealHealth(state.currentMap);
+        healthWrap.innerHTML = `<label>Overall Health (Calculated)</label><div><span class="health-chip health-${health.healthLabel.toLowerCase()}">${health.healthLabel} (${health.score})</span></div>`;
         grid.appendChild(healthWrap);
 
         const notesWrap = document.createElement('div');
@@ -1699,6 +2089,8 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
             return;
           }
 
+          renderInspectionHeader(panel);
+
           if (tab === 'Summary') {
             renderSummaryPanel(panel);
           } else {
@@ -1723,6 +2115,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         const toSave = JSON.parse(JSON.stringify(state.currentMap));
         if (!toSave.createdAt) toSave.createdAt = nowIso();
         toSave.updatedAt = nowIso();
+        toSave.overallHealth = calculateDealHealth(toSave).healthLabel;
 
         await idbPut(toSave);
         setLocalDataUpdatedAt(toSave.updatedAt);
@@ -1822,6 +2215,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
       }
 
       function buildPrintReport(mapObj) {
+        const health = calculateDealHealth(mapObj);
         const summaryFields = [
           ['Opportunity Name', mapObj.opportunityName],
           ['Account Name', mapObj.accountName],
@@ -1831,7 +2225,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           ['Sales Owner', mapObj.salesOwner],
           ['Economic Buyer', mapObj.economicBuyer],
           ['Champion', mapObj.champion],
-          ['Overall Health', mapObj.overallHealth],
+          ['Overall Health', `${health.healthLabel} (${health.score})`],
           ['Notes', mapObj.notes]
         ];
 
@@ -1871,6 +2265,17 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           showActionMessage('No MAP selected. Please select a MAP first.', 'error');
           return;
         }
+        const missingSummary = ['opportunityName', 'accountName', 'salesOwner'].filter((k) => !hasValue(state.currentMap[k]));
+        if (missingSummary.length) {
+          alert(`PDF export blocked: missing required fields (${missingSummary.join(', ')}).`);
+          return;
+        }
+        const completeness = getMeddpicCompleteness(state.currentMap);
+        const qualified = MEDDPIC_ELEMENTS.filter((e) => completeness[e] !== 'missing').length;
+        if (qualified < 6) {
+          const proceed = confirm(`Qualification warning: only ${qualified}/8 MEDDPIC elements are partial or complete. Export anyway?`);
+          if (!proceed) return;
+        }
         el.printReport.innerHTML = buildPrintReport(state.currentMap);
         window.print();
       }
@@ -1887,6 +2292,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
       async function init() {
         try {
           let maps = await idbGetAll();
+          maps = maps.map((m) => sanitizeImportedMap(m)).filter(Boolean);
           if (!maps.length) {
             const sample = createSampleMap();
             await idbPut(sample);
