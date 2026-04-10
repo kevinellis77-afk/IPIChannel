@@ -1,93 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-10T11:00:23.036Z",
+  "updatedAt": "2026-04-10T11:01:36.103Z",
   "maps": [
     {
       "id": "5077625b-7c6a-4888-9cc9-10146d7456d6",
       "createdAt": "2026-04-10T09:31:16.754Z",
       "updatedAt": "2026-04-10T09:54:29.003Z",
       "opportunityName": "Acme PCI Opportunity",
-      "accountName": "Acme Financial",
-      "dealValue": "250000",
-      "forecastCategory": "Best Case",
-      "closeDate": "2026-07-30",
-      "salesOwner": "Kevin Ellis",
-      "economicBuyer": "Rita Shah",
-      "champion": "Darren Wong",
-      "overallHealth": "Green",
-      "notes": "Pilot finished. Procurement review starts next week.",
-      "meddpicScorecard": [
-        [
-          "Metrics",
-          "In Progress",
-          "",
-          "Baseline validated",
-          "Jordan Lee",
-          "Need executive sign-off"
-        ]
-      ],
-      "metrics": [
-        [
-          "Cycle time reduction",
-          "18%",
-          "30%",
-          "Operational efficiency",
-          "",
-          "Need final benchmark"
-        ]
-      ],
-      "stakeholders": [
-        [
-          "Rita Shah",
-          "CFO",
-          "High",
-          "Supportive",
-          "Focused on ROI"
-        ]
-      ],
-      "decisionProcess": [
-        [
-          "Security review",
-          "IT Security",
-          "2026-05-10",
-          "Pending",
-          "Questionnaire sent"
-        ]
-      ],
-      "paperProcess": [
-        [
-          "MSA redlines",
-          "Legal",
-          "Drafting",
-          "2026-05-22",
-          "Customer requested new clause"
-        ]
-      ],
-      "competition": [
-        [
-          "Contoso Suite",
-          "Incumbent relationship",
-          "Limited automation",
-          "Active",
-          "Competing at lower price"
-        ]
-      ],
-      "actionPlan": [
-        [
-          "Schedule EB value recap",
-          "Jordan Lee",
-          "2026-04-21",
-          "Open",
-          "",
-          "Include champion in prep"
-        ]
-      ]
-    },
-    {
-      "id": "f8a4d1f8-d06b-4f1e-8f6f-e820cd1f47b3",
-      "createdAt": "2026-04-10T09:54:34.749Z",
-      "updatedAt": "2026-04-10T09:54:49.767Z",
-      "opportunityName": "ACME CCaaS ",
       "accountName": "Acme Financial",
       "dealValue": "250000",
       "forecastCategory": "Best Case",
