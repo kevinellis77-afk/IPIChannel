@@ -1,7 +1,149 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-10T13:50:27.934Z",
+  "updatedAt": "2026-04-10T14:12:21.869Z",
   "maps": [
+    {
+      "id": "2ddb66bc-9cd3-437d-b604-fc795a6c5b18",
+      "createdAt": "2026-04-10T13:56:33.943Z",
+      "updatedAt": "2026-04-10T14:11:48.768Z",
+      "opportunityName": "City of Seattle Pauseable",
+      "accountName": "City of Seattle / World Wide Technology Inc",
+      "dealValue": "17920",
+      "forecastCategory": "Pipeline",
+      "closeDate": "2026-04-29",
+      "hubspotDealUrl": "https://app-eu1.hubspot.com/contacts/25268966/record/0-3/466727461105",
+      "salesOwner": "Kevin Ellis / Finn Rafter Phillips",
+      "economicBuyer": "David Mcdaniel",
+      "champion": "",
+      "overallHealth": "Amber",
+      "notes": "This is going through security and procurement review following a positive demo. The customer was happy and WWT have submitted the commercials to the customer. We are now awaiting confirmation of next steps and a decision.\n\n145 Named Pauseable Licenses via AppFoundry - £8 per license\nPlus PS Install Package. £4k",
+      "meddpicScorecard": [
+        [
+          "Economic Buyer",
+          "Complete",
+          "David McDaniel",
+          "CEO of the Reseller. He can authorise order. ",
+          "Kevin Ellis",
+          "Need to validate this. "
+        ],
+        [
+          "Decision Criteria",
+          "Complete",
+          "Security Review, Functionality Review",
+          "Email chain",
+          "Kevin Ellis",
+          "Need to validate this. "
+        ],
+        [
+          "Decision Process",
+          "Complete",
+          "Customer Sign off, then partner Place order via App foundry",
+          "Email chain",
+          "Kevin Ellis",
+          "Need to validate this"
+        ],
+        [
+          "Paper Process",
+          "Complete",
+          "Order will be placed upon Reseller then they will place order via App Foundry",
+          "Agreed Process",
+          "Kevin Ellis",
+          "Need to validate this"
+        ],
+        [
+          "Identify Pain",
+          "In Progress",
+          "Not yet understood",
+          "No information available",
+          "Kevin Ellis",
+          "Need to validate"
+        ],
+        [
+          "Champion",
+          "Complete",
+          "David McDaniel",
+          "Email",
+          "Kevin Ellis",
+          "Need to validate"
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]
+      ],
+      "metrics": [],
+      "stakeholders": [
+        [
+          "David McDaniel",
+          "CEO",
+          "High",
+          "Supporter",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]
+      ],
+      "decisionProcess": [
+        [
+          "Customer Validates Functionality",
+          "Matt Taylor",
+          "17/04/2026",
+          "In Progress",
+          "Waiting for confirmation"
+        ],
+        [
+          "Customer validates Security Checks",
+          "Matt Taylor",
+          "17/04/2026",
+          "In Progress",
+          "Waiting for confirmation"
+        ]
+      ],
+      "paperProcess": [
+        [
+          "Customer Places Order on Partner",
+          "David McDaniel",
+          "Awaiting Order",
+          "30/04/2026",
+          ""
+        ],
+        [
+          "Reseller Places Order on App Foundry",
+          "Kevin Ellis",
+          "Awaiting Order",
+          "30/04/2026",
+          ""
+        ]
+      ],
+      "competition": [
+        [
+          "PCI Pal",
+          "Red",
+          "Price",
+          "In Progress",
+          ""
+        ]
+      ],
+      "actionPlan": [
+        [
+          "KE to Engage with partner",
+          "Kevin Ellis",
+          "17/04/2026",
+          "In Progress",
+          "Decision Criteria",
+          "KE to approach David McDaniel and introduce himself. "
+        ]
+      ]
+    },
     {
       "id": "5077625b-7c6a-4888-9cc9-10146d7456d6",
       "createdAt": "2026-04-10T09:31:16.754Z",
