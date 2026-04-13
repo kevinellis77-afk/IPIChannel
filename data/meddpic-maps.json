@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-10T15:23:44.515Z",
+  "updatedAt": "2026-04-13T08:44:49.815Z",
   "maps": [
     {
       "id": "2ddb66bc-9cd3-437d-b604-fc795a6c5b18",
       "createdAt": "2026-04-10T13:56:33.943Z",
-      "updatedAt": "2026-04-10T14:15:22.031Z",
+      "updatedAt": "2026-04-13T08:44:43.341Z",
       "opportunityName": "City of Seattle Pauseable",
       "accountName": "City of Seattle / World Wide Technology Inc",
       "dealValue": "17920",
@@ -82,14 +82,7 @@
           "CEO",
           "High",
           "Supporter",
-          ""
-        ],
-        [
-          "",
-          "",
-          "",
-          "",
-          ""
+          "David is key to getting this deal done. "
         ]
       ],
       "decisionProcess": [
