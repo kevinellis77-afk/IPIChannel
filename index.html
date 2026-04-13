@@ -1340,6 +1340,15 @@
         return String(mapObj?.champion || '').trim() || getScorecardOwnerName(mapObj, 'Champion');
       }
 
+      function normalizeScorecardStatus(value) {
+        const status = String(value || '').trim().toLowerCase();
+        if (!status) return '';
+        if (status === 'complete') return 'complete';
+        if (status === 'in progress') return 'partial';
+        if (status === 'not started' || status === 'blocked') return 'missing';
+        return '';
+      }
+
       function syncSummaryRolesFromScorecard(mapObj) {
         if (!mapObj || typeof mapObj !== 'object') return;
         if (!hasValue(mapObj.economicBuyer)) {
@@ -1359,6 +1368,7 @@
         const competitionRows = getRows(mapObj, 'competition');
         const stakeholders = getRows(mapObj, 'stakeholders');
         const score = (element) => findScorecardRow(mapObj, element);
+        const scoreStatus = (element) => normalizeScorecardStatus(score(element)?.[1]);
         const countFields = (checks) => checks.filter(Boolean).length;
         const toStatus = (scoreCount, total, completeThreshold = total) => {
           if (scoreCount >= completeThreshold) return 'complete';
@@ -1367,6 +1377,8 @@
         };
 
         const metricsStatus = (() => {
+          const fromScore = scoreStatus('Metrics');
+          if (fromScore) return fromScore;
           const complete = metricsRows.some((r) => hasValue(r?.[0]) && hasValue(r?.[2]) && hasValue(r?.[3]) && String(r?.[4] || '').trim().toLowerCase() === 'yes');
           if (complete) return 'complete';
           const partial = metricsRows.some((r) => hasValue(r?.[0]) || hasValue(r?.[2]) || hasValue(r?.[3]) || hasValue(r?.[4]));
@@ -1374,18 +1386,22 @@
         })();
 
         const economicBuyerRow = score('Economic Buyer');
+        const economicBuyerScoreStatus = normalizeScorecardStatus(economicBuyerRow?.[1]);
         const economicBuyerStatus = toStatus(
           countFields([hasValue(mapObj?.economicBuyer), hasValue(economicBuyerRow?.[3])]),
           2
         );
 
         const decisionCriteriaRow = score('Decision Criteria');
+        const decisionCriteriaScoreStatus = normalizeScorecardStatus(decisionCriteriaRow?.[1]);
         const decisionCriteriaStatus = toStatus(
           countFields([hasValue(decisionCriteriaRow?.[2]), hasValue(decisionCriteriaRow?.[3])]),
           2
         );
 
         const decisionProcessStatus = (() => {
+          const fromScore = scoreStatus('Decision Process');
+          if (fromScore) return fromScore;
           const complete = decisionRows.some((r) => hasValue(r?.[0]) && hasValue(r?.[1]) && hasValue(r?.[2]));
           if (complete) return 'complete';
           const partial = decisionRows.some((r) => hasValue(r?.[0]) || hasValue(r?.[1]) || hasValue(r?.[2]));
@@ -1393,6 +1409,8 @@
         })();
 
         const paperProcessStatus = (() => {
+          const fromScore = scoreStatus('Paper Process');
+          if (fromScore) return fromScore;
           const complete = paperRows.some((r) => hasValue(r?.[0]) && hasValue(r?.[1]) && hasValue(r?.[2]));
           if (complete) return 'complete';
           const partial = paperRows.some((r) => hasValue(r?.[0]) || hasValue(r?.[1]) || hasValue(r?.[2]));
@@ -1400,6 +1418,7 @@
         })();
 
         const painRow = score('Identify Pain');
+        const identifyPainScoreStatus = normalizeScorecardStatus(painRow?.[1]);
         const identifyPainStatus = toStatus(
           countFields([hasValue(painRow?.[2]), hasValue(painRow?.[3])]),
           2
@@ -1408,6 +1427,7 @@
         const championName = getChampionName(mapObj);
         const championRow = score('Champion');
         const championScorecardComplete = String(championRow?.[1] || '').trim().toLowerCase() === 'complete';
+        const championScoreStatus = normalizeScorecardStatus(championRow?.[1]);
         const championExists = stakeholders.some((s) => String(s?.[1] || '').trim().toLowerCase() === 'champion')
           || championScorecardComplete
           || hasValue(championRow?.[2])
@@ -1418,6 +1438,8 @@
         );
 
         const competitionStatus = (() => {
+          const fromScore = scoreStatus('Competition');
+          if (fromScore) return fromScore;
           const complete = competitionRows.some((r) => hasValue(r?.[0]) && hasValue(r?.[2]) && hasValue(r?.[4]));
           if (complete) return 'complete';
           const partial = competitionRows.some((r) => hasValue(r?.[0]) || hasValue(r?.[2]) || hasValue(r?.[4]));
@@ -1426,12 +1448,12 @@
 
         return {
           Metrics: metricsStatus,
-          'Economic Buyer': economicBuyerStatus,
-          'Decision Criteria': decisionCriteriaStatus,
+          'Economic Buyer': economicBuyerScoreStatus || economicBuyerStatus,
+          'Decision Criteria': decisionCriteriaScoreStatus || decisionCriteriaStatus,
           'Decision Process': decisionProcessStatus,
           'Paper Process': paperProcessStatus,
-          'Identify Pain': identifyPainStatus,
-          Champion: championStatus,
+          'Identify Pain': identifyPainScoreStatus || identifyPainStatus,
+          Champion: championScoreStatus || championStatus,
           Competition: competitionStatus
         };
       }
