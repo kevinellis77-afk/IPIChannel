@@ -1330,6 +1330,28 @@
         return rows.find((row) => String(row?.[0] || '').trim().toLowerCase() === element.toLowerCase()) || null;
       }
 
+      function getScorecardOwnerName(mapObj, element) {
+        const row = findScorecardRow(mapObj, element);
+        const value = String(row?.[2] || '').trim();
+        return value || '';
+      }
+
+      function getChampionName(mapObj) {
+        return String(mapObj?.champion || '').trim() || getScorecardOwnerName(mapObj, 'Champion');
+      }
+
+      function syncSummaryRolesFromScorecard(mapObj) {
+        if (!mapObj || typeof mapObj !== 'object') return;
+        if (!hasValue(mapObj.economicBuyer)) {
+          const ebFromScorecard = getScorecardOwnerName(mapObj, 'Economic Buyer');
+          if (ebFromScorecard) mapObj.economicBuyer = ebFromScorecard;
+        }
+        if (!hasValue(mapObj.champion)) {
+          const championFromScorecard = getScorecardOwnerName(mapObj, 'Champion');
+          if (championFromScorecard) mapObj.champion = championFromScorecard;
+        }
+      }
+
       function getMeddpicCompleteness(mapObj) {
         const metricsRows = getRows(mapObj, 'metrics');
         const decisionRows = getRows(mapObj, 'decisionProcess');
@@ -1383,9 +1405,15 @@
           2
         );
 
-        const championExists = stakeholders.some((s) => String(s?.[1] || '').trim().toLowerCase() === 'champion');
+        const championName = getChampionName(mapObj);
+        const championRow = score('Champion');
+        const championScorecardComplete = String(championRow?.[1] || '').trim().toLowerCase() === 'complete';
+        const championExists = stakeholders.some((s) => String(s?.[1] || '').trim().toLowerCase() === 'champion')
+          || championScorecardComplete
+          || hasValue(championRow?.[2])
+          || hasValue(championRow?.[3]);
         const championStatus = toStatus(
-          countFields([hasValue(mapObj?.champion), championExists]),
+          countFields([hasValue(championName), championExists]),
           2
         );
 
@@ -1435,10 +1463,14 @@
         else if (!hasValue(ebRow?.[3]) && !hasValue(ebRow?.[2])) add(-1, 'Economic Buyer evidence is weak.', '', 'Economic Buyer');
         else add(2, '', 'Economic Buyer identified with evidence.');
 
+        const championName = getChampionName(mapObj);
+        const championRow = findScorecardRow(mapObj, 'Champion');
         const championStakeholder = stakeholders.some((s) => String(s?.[1] || '').trim().toLowerCase() === 'champion');
         const championSupport = stakeholders.some((s) => hasValue(s?.[3]));
-        if (!hasValue(mapObj?.champion)) add(-3, 'Champion is missing.', '', 'Champion');
-        else if (!championStakeholder || !championSupport) add(-1, 'Champion exists but stakeholder evidence is weak.', '', 'Champion');
+        const championScorecardComplete = String(championRow?.[1] || '').trim().toLowerCase() === 'complete';
+        const championEvidence = championScorecardComplete || hasValue(championRow?.[2]) || hasValue(championRow?.[3]);
+        if (!hasValue(championName)) add(-3, 'Champion is missing.', '', 'Champion');
+        else if (!championEvidence && (!championStakeholder || !championSupport)) add(-1, 'Champion exists but stakeholder evidence is weak.', '', 'Champion');
         else add(2, '', 'Champion is identified with support signal.');
 
         if (!dcRow || (!hasValue(dcRow?.[2]) && !hasValue(dcRow?.[3]))) add(-2, 'Decision Criteria not documented.', '', 'Decision Criteria');
@@ -1555,7 +1587,8 @@
           if (hasValue(mapObj.economicBuyer)) return `EB: ${String(mapObj.economicBuyer).trim()}`;
         }
         if (element === 'Champion') {
-          if (hasValue(mapObj.champion)) return `Champion: ${String(mapObj.champion).trim()}`;
+          const championName = getChampionName(mapObj);
+          if (hasValue(championName)) return `Champion: ${String(championName).trim()}`;
         }
         if (element === 'Decision Process') {
           const dp = getRows(mapObj, 'decisionProcess').find((r) => hasValue(r?.[0]) || hasValue(r?.[1]));
@@ -2205,6 +2238,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
           if (row.length === 5) return [row[0], row[1], row[2], row[3], '', row[4]];
           return row;
         });
+        syncSummaryRolesFromScorecard(cleaned);
         return cleaned;
       }
 
@@ -2463,6 +2497,9 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
         if (!state.currentMap) return;
         normalizeRow(arrayKey, rowIndex);
         state.currentMap[arrayKey][rowIndex][colIndex] = value;
+        if (arrayKey === 'meddpicScorecard') {
+          syncSummaryRolesFromScorecard(state.currentMap);
+        }
         markDirty(true);
         scheduleAutosave();
       }
@@ -2753,7 +2790,15 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
 
           const input = document.createElement('input');
           input.type = type;
-          input.value = key === 'hubspotDealUrl' ? normalizeHubspotDealUrl(state.currentMap[key]) : (state.currentMap[key] || '');
+          if (key === 'hubspotDealUrl') {
+            input.value = normalizeHubspotDealUrl(state.currentMap[key]);
+          } else if (key === 'champion') {
+            input.value = getChampionName(state.currentMap);
+          } else if (key === 'economicBuyer') {
+            input.value = String(state.currentMap[key] || '').trim() || getScorecardOwnerName(state.currentMap, 'Economic Buyer');
+          } else {
+            input.value = state.currentMap[key] || '';
+          }
           if (key === 'hubspotDealUrl') {
             input.placeholder = 'https://app.hubspot.com/contacts/123456789/record/0-3/987654321';
           }
@@ -3026,6 +3071,7 @@ Type PUSH for Keep Local and Push, REPLACE for Replace Local from GitHub, or CAN
 
       async function saveCurrent({ silentValidation = false, isAutosave = false } = {}) {
         if (!state.currentMap) return;
+        syncSummaryRolesFromScorecard(state.currentMap);
         const valid = validateRequired(state.currentMap, silentValidation);
         if (!valid) {
           markDirty(true);
