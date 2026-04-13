@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-13T08:44:49.815Z",
+  "updatedAt": "2026-04-13T08:51:48.482Z",
   "maps": [
     {
       "id": "2ddb66bc-9cd3-437d-b604-fc795a6c5b18",
       "createdAt": "2026-04-10T13:56:33.943Z",
-      "updatedAt": "2026-04-13T08:44:43.341Z",
+      "updatedAt": "2026-04-13T08:51:39.335Z",
       "opportunityName": "City of Seattle Pauseable",
       "accountName": "City of Seattle / World Wide Technology Inc",
       "dealValue": "17920",
@@ -15,7 +15,7 @@
       "salesOwner": "Kevin Ellis / Finn Rafter Phillips",
       "economicBuyer": "David Mcdaniel",
       "champion": "",
-      "overallHealth": "Amber",
+      "overallHealth": "Green",
       "notes": "This is going through security and procurement review following a positive demo. The customer was happy and WWT have submitted the commercials to the customer. We are now awaiting confirmation of next steps and a decision.\n\n145 Named Pauseable Licenses via AppFoundry - £8 per license\nPlus PS Install Package. £4k\n\n\n",
       "meddpicScorecard": [
         [
@@ -51,14 +51,6 @@
           "Need to validate this"
         ],
         [
-          "Identify Pain",
-          "In Progress",
-          "Not yet understood",
-          "No information available",
-          "Kevin Ellis",
-          "Need to validate"
-        ],
-        [
           "Champion",
           "Complete",
           "David McDaniel",
@@ -67,15 +59,32 @@
           "Need to validate"
         ],
         [
-          "",
-          "",
-          "",
-          "",
-          "",
-          ""
+          "Competition",
+          "Complete",
+          "PCI Pal",
+          "Email",
+          "Kevin Ellis",
+          "Need to validate "
+        ],
+        [
+          "Identify Pain",
+          "In Progress",
+          "Compliance failures",
+          "Email",
+          "Kevin Ellis",
+          "Need to validate"
         ]
       ],
-      "metrics": [],
+      "metrics": [
+        [
+          "PCI Compliance",
+          "0%",
+          "100%",
+          "Potential Fines",
+          "Yes ",
+          "They are at risk of being fined."
+        ]
+      ],
       "stakeholders": [
         [
           "David McDaniel",
@@ -122,8 +131,8 @@
           "PCI Pal",
           "Red",
           "Price",
-          "In Progress",
-          ""
+          "Complete",
+          "They are the main competition for this deal. "
         ]
       ],
       "actionPlan": [
